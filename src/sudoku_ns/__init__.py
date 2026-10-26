@@ -1,0 +1,1 @@
+"""Neurosymbolic Sudoku solver."""
