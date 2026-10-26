@@ -101,11 +101,12 @@ Real printed puzzles always have exactly one solution, so that is legitimate pri
 3. if not: add the hard clause "at least one cell is read differently from K", go to 1
 
 Each round returns the next-cheapest reading (costs rise monotonically), so the first unique one is the most
-probable reading *among readings with a unique solution*. Measured on the same 30 puzzles: 15 -> **24/30** at
-5% error, 3 -> **8/30** at 20%.
+probable reading *among readings with a unique solution*. In the sweep ([evaluation.md](evaluation.md)): 50% ->
+**80%** solved at 5% misreads, 10% -> **36.7%** at 20%.
 
-Costs: slower when the image is very noisy (20% error: mean 14.5 s, worst 167 s per puzzle, because many cheap
-ambiguous readings must be ruled out one by one; capped at 50 rounds). Each round rebuilds the RC2 solver,
+Costs: slower when the image is very noisy (sweep mean per puzzle: 0.76 s at 5%, 8.4 s at 20%; the worst single
+puzzle seen in a separate 20% run took 167 s), because many cheap ambiguous readings must be ruled out one by
+one; capped at 50 rounds. It can also break a correct reading to reach a unique one (1-5 cells per 30 puzzles). Each round rebuilds the RC2 solver,
 because pysat's `RC2Stratified` returned "no model" when clauses were added between `compute()` calls.
 
 ## Files

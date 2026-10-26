@@ -35,3 +35,9 @@ One entry per commit, newest at the bottom. Each says what changed and where to 
    Crops cut with the pipeline's own cell extractor, augmentation for train, held-out font families for val/test,
    lazy torch wrapper, Week 2 stubs (`model.py`, `train.py`, `calibrate.py`). Counts in
    [synthetic-data.md](synthetic-data.md#step-4-digit-dataset-perceptiondatasetpy-scriptsmake_digit_datasetpy).
+
+8. **feat(eval): simulated perception, metrics, sweep, reasoning demo**
+   `simulate_prob_grid` (realistic fake CNN output with a corruption record), metrics before/after reasoning,
+   the 4-method sweep (n = 30, ~28 min) and `demo_reasoning.py`. Results and caveats in
+   [evaluation.md](evaluation.md). Headline at 5% misreads: argmax 6.7%, threshold 23.3%, maxsat 50.0%,
+   maxsat_unique 80.0% of puzzles solved correctly.
