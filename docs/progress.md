@@ -16,3 +16,9 @@ One entry per commit, newest at the bottom. Each says what changed and where to 
    The core of the project. See [reasoning.md](reasoning.md). 11 reasoning tests: clean grid, misread corrected,
    missed digit, hallucination removed, numbering round-trip, weight monotonicity, plus encoding/baseline checks.
    Added [dataflow.md](dataflow.md) as the project map.
+
+4. **perf(reasoning): per-cell weight shift, stratified RC2, `require_unique`**
+   Found while running the sweep: plain RC2 took 68 s on one noisy grid. Shifting each cell's weights by its argmax
+   cost (same optimum, proven by a test) plus `RC2Stratified` brought it to ~0.1 s. Diagnosed sweep failures: 14 of
+   15 were cheap-but-ambiguous readings, so added `solve(..., require_unique=True)` (next-best reading until unique).
+   Details and measured numbers in [reasoning.md](reasoning.md).

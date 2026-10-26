@@ -177,3 +177,40 @@ def test_generator_is_seeded():
     b, _ = generate(seed=5)
     np.testing.assert_array_equal(a, b)
     assert (a > 0).sum() == 30
+
+
+def test_per_cell_shift_keeps_the_optimum(puzzle):
+    # Same misread as test 2: shifted and textbook weights must pick the same
+    # reading, and their costs differ by exactly the constant sum of per-cell minima.
+    givens, _ = puzzle
+    p = one_hot(givens)
+    r, c = map(int, np.argwhere(givens)[0])
+    w = next(d for d in range(1, 10) if d != givens[r, c])
+    set_cell(p, r, c, {w: 0.5, int(givens[r, c]): 0.4})
+    a = solve(p, check_unique=False, shift=True)
+    b = solve(p, check_unique=False, shift=False)
+    np.testing.assert_array_equal(a.read_givens, b.read_givens)
+    const = sum(min(weight(p[i, j, k]) for k in range(10)) for i in range(9) for j in range(9))
+    assert b.cost - a.cost == const
+
+
+def test_require_unique_recovers_essential_missed_digit(puzzle):
+    # Miss a given that is ESSENTIAL (its removal makes the puzzle ambiguous).
+    # Plain MAP happily reads it as empty (cheaper) and returns some solution
+    # of the ambiguous puzzle; require_unique pays to read the digit back.
+    givens, solution = puzzle
+    redundant = set(redundant_givens(givens))
+    r, c = next(
+        (int(r), int(c))
+        for r, c in zip(*np.nonzero(givens), strict=True)
+        if (r, c) not in redundant
+    )
+    p = one_hot(givens)
+    set_cell(p, r, c, {0: 0.55, int(givens[r, c]): 0.35})
+
+    plain = solve(p)
+    assert plain.read_givens[r, c] == 0 and plain.unique is False
+
+    res = solve(p, require_unique=True)
+    assert res.unique is True and res.read_givens[r, c] == givens[r, c]
+    np.testing.assert_array_equal(res.solution, solution)

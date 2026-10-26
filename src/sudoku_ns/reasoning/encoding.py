@@ -54,6 +54,26 @@ clashes with a row is therefore "corrected" only when the cheapest consistent
 alternative costs less than all other ways of fixing the clash; the solver
 never has a hand-written rule for corrections.
 
+Per-cell shift (on by default, shift=True)
+------------------------------------------
+In practice we subtract each cell's smallest weight (the cost of its CNN
+argmax) from all ten of its weights:
+
+    w'(r,c,k) = w(r,c,k) - min_j w(r,c,j)  ~  SCALE * -log(p_k / p_max)
+
+Every model pays exactly one weight per cell, so this lowers the cost of
+EVERY model by the same constant (sum over cells of the min weight): the
+optimum, and hence the MAP argument above, are unchanged. What changes:
+- the argmax class has weight 0 and its clause is dropped, so "agree with the
+  CNN everywhere" costs 0 and the reported cost reads as "how much CNN
+  confidence (in log-likelihood-ratio units) the solver had to overrule";
+- RC2 is core-guided: it starts from cost 0 and raises the lower bound one
+  conflict core at a time. With unshifted weights every cell contributes
+  unavoidable cost that RC2 must first "discover" through cores; on noisy
+  grids that took over a minute per puzzle (measured: 68 s on one grid with
+  8 corruptions) versus ~0.1 s shifted. shift=False keeps the textbook
+  form for checking that the two agree (tests/test_reasoning.py).
+
 Note the optimum is a reading consistent with SOME solution, not necessarily
 a unique one; uniqueness is checked separately in solver.py.
 
@@ -218,24 +238,25 @@ def weight(p: float) -> int:
     return round(SCALE * -math.log(max(float(p), EPS)))
 
 
-def soft_clauses(prob: ProbGrid) -> Iterable[tuple[list[int], int]]:
-    """(clause, weight) pairs: NOT y(r,c,k) weighted by -log p(r,c,k)."""
+def soft_clauses(prob: ProbGrid, shift: bool = True) -> Iterable[tuple[list[int], int]]:
+    """(clause, weight) pairs: NOT y(r,c,k) weighted by -log p(r,c,k), optionally shifted."""
     for r in range(9):
         for c in range(9):
+            ws = [weight(prob[r, c, k]) for k in range(10)]
+            base = min(ws) if shift else 0
             for k in range(10):
-                w = weight(prob[r, c, k])
-                if w > 0:
-                    yield [-y_var(r, c, k)], w
+                if ws[k] - base > 0:
+                    yield [-y_var(r, c, k)], ws[k] - base
 
 
-def build_wcnf(prob: ProbGrid, amo_encoding: str = "pairwise") -> WCNF:
+def build_wcnf(prob: ProbGrid, amo_encoding: str = "pairwise", shift: bool = True) -> WCNF:
     """Full weighted formula: hard Sudoku + reading clauses, soft CNN beliefs."""
     validate_prob_grid(prob)
     pool = _new_pool()
     wcnf = WCNF()
     for cl in sudoku_clauses(amo_encoding, pool) + reading_clauses(amo_encoding, pool):
         wcnf.append(cl)
-    for cl, w in soft_clauses(prob):
+    for cl, w in soft_clauses(prob, shift):
         wcnf.append(cl, weight=w)
     return wcnf
 
