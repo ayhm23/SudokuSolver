@@ -22,3 +22,7 @@ One entry per commit, newest at the bottom. Each says what changed and where to 
    cost (same optimum, proven by a test) plus `RC2Stratified` brought it to ~0.1 s. Diagnosed sweep failures: 14 of
    15 were cheap-but-ambiguous readings, so added `solve(..., require_unique=True)` (next-best reading until unique).
    Details and measured numbers in [reasoning.md](reasoning.md).
+
+5. **feat(synth): font download, puzzle renderer, noise functions**
+   15 OFL fonts, renders with exact corner ground truth, 4 noise types with physical severity units.
+   See [synthetic-data.md](synthetic-data.md). Tests: `test_noise.py` (17), `test_render.py` (3).
