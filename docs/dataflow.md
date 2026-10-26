@@ -57,10 +57,29 @@ Real photos only arrive in Week 2, so in Week 1 every input is generated:
 | File | Main function(s) | Reads | Produces | Used by |
 |---|---|---|---|---|
 | `interfaces.py` | `validate_*`, `Override`, `SolveResult` | - | type contracts | everything |
+| `pipeline.py` | `run(image_path, perceiver)`, `OraclePerceiver` | image file | `PipelineOutput` (corners, cells, prob, result) | demo, Week 2+ evaluation |
+| `vision/grid_detect.py` | `find_grid_corners` | RGB image | 4 corners | pipeline, `eval_grid_detect.py` |
+| `vision/cell_extract.py` | `warp_grid`, `crop_cell`, `extract_cells` | image + corners | CellImages | pipeline, perception/dataset |
+| `perception/dataset.py` | `build_dataset`, `augment`, `torch_dataset` | renders (PNG + JSON) | `digits.npz` | Week 2 training |
 | `reasoning/encoding.py` | `x_var`, `y_var`, `build_wcnf`, `sudoku_cnf` | ProbGrid | PySAT formula | solver, baselines, generator |
 | `reasoning/solver.py` | `solve`, `sat_solve`, `is_unique` | ProbGrid / Grid | SolveResult | pipeline, eval, demo |
 | `reasoning/baselines.py` | `argmax_then_sat`, `threshold_then_sat` | ProbGrid | SolveResult | sweep |
 | `reasoning/generator.py` | `generate`, `redundant_givens` | seed | puzzle + solution | tests, sweep, render |
 | `reasoning/explain.py` | `format_grid`, `describe_result` | Grid, SolveResult | text | demo |
+| `synth/render.py` | `render_puzzle`, `save_render`, `load_render` | puzzle + fonts | image + ground truth | render script, tests |
+| `synth/noise.py` | `blur`, `rotate`, `jpeg`, `gaussian_noise`, `apply_noise` | image | degraded image | Week 2 noise sweep |
+| `eval/simulate.py` | `simulate_prob_grid` | puzzle | ProbGrid + CorruptionRecord | sweep, demo, OraclePerceiver |
+| `eval/metrics.py` | `evaluate`, `aggregate` | SolveResult + truth | metric dicts | sweep |
 
-The table grows as each task lands; see [progress.md](progress.md).
+## Scripts and what they write
+
+| Script | Writes |
+|---|---|
+| `download_fonts.py` | `data/fonts/` |
+| `render_synthetic.py` | `data/synthetic/clean/` |
+| `make_digit_dataset.py` | `data/digits/digits.npz` |
+| `eval_grid_detect.py` | stdout, failure images in `outputs/grid_detect_failures/` |
+| `sweep_simulated.py` | `outputs/sweep_simulated.{csv,png}` |
+| `demo_reasoning.py` | stdout |
+
+What each commit added: [progress.md](progress.md).

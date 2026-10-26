@@ -41,3 +41,9 @@ One entry per commit, newest at the bottom. Each says what changed and where to 
    the 4-method sweep (n = 30, ~28 min) and `demo_reasoning.py`. Results and caveats in
    [evaluation.md](evaluation.md). Headline at 5% misreads: argmax 6.7%, threshold 23.3%, maxsat 50.0%,
    maxsat_unique 80.0% of puzzles solved correctly.
+
+9. **feat(pipeline): end-to-end run, README, CONTRIBUTING**
+   `pipeline.run(image_path, perceiver)` wires vision -> perceiver -> solver; `OraclePerceiver` stands in for the
+   CNN. README (setup, scripts, repo map, owners, roadmap), CONTRIBUTING (branches, reviews, conventional
+   commits, docs-with-every-change). Full module table in [dataflow.md](dataflow.md).
+   On GitHub: labels `vision`, `perception`, `reasoning`, `evaluation`; milestones Week 1-4; Week 2 issues #1-#4.
