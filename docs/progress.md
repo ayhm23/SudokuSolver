@@ -26,3 +26,12 @@ One entry per commit, newest at the bottom. Each says what changed and where to 
 5. **feat(synth): font download, puzzle renderer, noise functions**
    15 OFL fonts, renders with exact corner ground truth, 4 noise types with physical severity units.
    See [synthetic-data.md](synthetic-data.md). Tests: `test_noise.py` (17), `test_render.py` (3).
+
+6. **feat(vision): grid detection and cell extraction**
+   Contour-based corner finder with a grid-line check (fixes "found the paper instead of the grid"), perspective
+   warp to 81 cells. 200/200 clean renders within 5 px, mean error 1.74 px. See [vision.md](vision.md).
+
+7. **feat(perception): digit dataset split by font family**
+   Crops cut with the pipeline's own cell extractor, augmentation for train, held-out font families for val/test,
+   lazy torch wrapper, Week 2 stubs (`model.py`, `train.py`, `calibrate.py`). Counts in
+   [synthetic-data.md](synthetic-data.md#step-4-digit-dataset-perceptiondatasetpy-scriptsmake_digit_datasetpy).

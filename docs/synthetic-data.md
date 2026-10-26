@@ -71,3 +71,46 @@ real units:
 
 Tests (`tests/test_noise.py`): s = 0 is the identity, damage grows with s, shape and dtype are kept, a severity
 outside [0, 1] is rejected.
+
+## Step 4: digit dataset (`perception/dataset.py`, `scripts/make_digit_dataset.py`)
+
+```
+python scripts/make_digit_dataset.py     # -> data/digits/digits.npz
+```
+
+```
+render JSON (ground-truth corners)
+   │  vision.cell_extract.warp_grid + crop_cell   ◄── the SAME code the pipeline uses
+   ▼
+81 uint8 32x32 crops per puzzle, label = given (0 = empty)
+   │  train split only: + 2 augmented copies (shift ±2 px, scale 0.9-1.1, rotate ±6°,
+   │                     blur, contrast/brightness, pixel noise)
+   ▼
+digits.npz: train_x, train_y, train_font, val_x, ..., test_font
+```
+
+**Split by font family**, chosen by hand so each split has a mix of styles:
+
+| split | families | why |
+|---|---|---|
+| test | Lora (serif), Open Sans (sans), Space Mono (mono) | never seen in training |
+| val | Merriweather (serif), Oswald (condensed) | for early stopping / temperature scaling |
+| train | the other 7 families (10 font files) | |
+
+Families, not files: Fira Sans Regular and Fira Sans Bold have the same digit shapes, so splitting them would leak.
+
+Class counts from the 200 clean renders (Week 1, real output):
+
+| split | n | empty | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| train | 34020 | 21420 | 1416 | 1401 | 1377 | 1383 | 1347 | 1434 | 1425 | 1407 | 1410 |
+| val | 1701 | 1071 | 72 | 65 | 76 | 77 | 74 | 66 | 71 | 65 | 64 |
+| test | 3159 | 1989 | 120 | 127 | 135 | 136 | 136 | 131 | 122 | 137 | 126 |
+
+About 63% of cells are empty: Week 2 training should weight the loss or subsample empties.
+
+Note: the 12% inner margin removes most grid lines, so clean crops show few line remnants; remnants mainly come
+from the shift augmentation and, in real use, from corner detection error.
+
+`torch_dataset(npz, "train")` wraps a split as a PyTorch `Dataset`; torch is imported only inside that function
+(install with `pip install -e ".[ml]"`).
