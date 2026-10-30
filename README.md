@@ -1,5 +1,7 @@
 # Neurosymbolic Sudoku Solver
 
+[![CI](https://github.com/ayhm23/SudokuSolver/actions/workflows/ci.yml/badge.svg)](https://github.com/ayhm23/SudokuSolver/actions/workflows/ci.yml)
+
 AID 851 (Machine Reasoning) course project. Final deadline: 27 November 2026.
 
 Photo of a Sudoku → OpenCV finds the grid → a CNN gives a probability distribution over {empty, 1..9} for each

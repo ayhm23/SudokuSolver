@@ -47,3 +47,6 @@ One entry per commit, newest at the bottom. Each says what changed and where to 
    CNN. README (setup, scripts, repo map, owners, roadmap), CONTRIBUTING (branches, reviews, conventional
    commits, docs-with-every-change). Full module table in [dataflow.md](dataflow.md).
    On GitHub: labels `vision`, `perception`, `reasoning`, `evaluation`; milestones Week 1-4; Week 2 issues #1-#4.
+
+10. **docs: CI badge in README**
+    Shows the status of the latest GitHub Actions run (ruff + pytest) at the top of the README.
