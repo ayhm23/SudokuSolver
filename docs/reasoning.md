@@ -68,10 +68,13 @@ The solver reads 5. With the per-cell shift (below) the reported cost is 1204 - 
 overruling the CNN once. The override printed by `explain.describe_override`:
 
 ```
-(0, 2): CNN read 9 (p=0.60) -> solver reads 5 (p=0.30); 9 clashes with 9 at (0, 6) in row 0
+(0, 2): CNN read 9 (p=0.60) -> solver reads 5 (p=0.30); conflicts with given 9 at (0, 6) in row 0
 ```
 
-`argmax_then_sat` on the same input returns UNSAT.
+`argmax_then_sat` on the same input returns UNSAT. `unweighted_maxsat` (below) drops the 9 (cost 1) but cannot
+know that 5 was the runner-up, so the cell becomes empty, the puzzle becomes ambiguous and its solution is
+**wrong**. The weighted solver reads the 5 back in and gets the right solution: that is what the probabilities
+buy.
 
 ## Per-cell shift: why `cost = 0` means "agreed with the CNN"
 
@@ -109,15 +112,69 @@ puzzle seen in a separate 20% run took 167 s), because many cheap ambiguous read
 one; capped at 50 rounds. It can also break a correct reading to reach a unique one (1-5 cells per 30 puzzles). Each round rebuilds the RC2 solver,
 because pysat's `RC2Stratified` returned "no model" when clauses were added between `compute()` calls.
 
+## Explaining overrides with unsat cores (`explain.py`)
+
+Every override comes with a reason a person can check. For a cell where the CNN read digit `a` and the solver
+read something else, we ask a plain SAT solver:
+
+> Is there a valid Sudoku with `a` at this cell **and** every other digit the solver finally kept?
+
+The kept digits are passed as *assumptions* on top of the Sudoku rules, so one solver instance is reused for
+all overrides.
+
+- **UNSAT**: the solver returns a *core*, a subset of the assumptions that is already contradictory. We shrink it
+  to a **minimal** core: drop one given, re-check, and keep the drop if it is still UNSAT. Every given listed is
+  then needed for the contradiction.
+  - core of size 1 → `conflicts with given 9 at (0, 6) in row 0` (a direct clash)
+  - larger core → `no valid Sudoku has 2 here together with givens 7 at (0, 1), 5 at (0, 2), 2 at (2, 3), 2 at
+    (7, 0)` (real output, `demo_reasoning.py --seed 3 --error-rate 0.15`). Here no single given rules the 2
+    out; these four together do. The Week 1 row/column/box scan could not find this kind of reason at all.
+- **SAT**: keeping the CNN's digit was possible, so the solver dropped it for cost (or, with `require_unique`,
+  for uniqueness). The reason is `lower total cost (no direct rule conflict)`. Cells the CNN read as *empty* always
+  get this reason, because an empty reading never conflicts with anything.
+
+Why use the solver for explanations rather than a hand-written check: it covers direct and indirect conflicts with
+one method, and the minimal core is a proof, not a heuristic. Tests: `test_explain_direct_conflict_names_one_given`,
+`test_explain_indirect_conflict_is_minimal` (checks that removing any given from the core makes it satisfiable),
+`test_explain_falls_back_without_conflict`.
+
+## The unweighted ablation (`baselines.unweighted_maxsat`)
+
+Same hard clauses as the weighted solver. The soft part: one clause "keep the argmax digit" with weight **1** for
+every cell the CNN read as a digit, and nothing for cells read as empty. The optimum is therefore "drop the
+fewest read digits so that a valid Sudoku remains", blind to whether a digit had p = 0.99 or p = 0.51.
+
+Two extra hard clauses make the reading well defined without changing the optimum: an empty-read cell stays
+empty, and a digit cell is either kept or emptied (never changed into another digit). Both are safe because
+emptying a cell never creates a conflict, so with equal weights neither a new nor a substituted digit can lower
+the cost. Comparing `maxsat_weighted` with `maxsat_unweighted` isolates the value of the CNN's confidence scores.
+
+## At-most-one encoding benchmark (`scripts/bench_encoding.py`)
+
+`solve(prob, check_unique=False)` on 100 simulated grids per error rate (same grids for both encodings, run back to
+back). Times in ms on this laptop; both encodings found the same optimum on all 400 grids.
+
+| misread rate | pairwise median | pairwise p95 | seqcounter median | seqcounter p95 |
+|---|---|---|---|---|
+| 0% | 53.7 | 63.4 | 51.7 | 67.2 |
+| 5% | 57.3 | 86.4 | 55.1 | 126.2 |
+| 10% | 64.9 | 130.7 | 71.6 | 268.4 |
+| 20% | 96.5 | 266.8 | 144.2 | 384.1 |
+
+**Pairwise stays the default.** The medians are equal at low noise, and pairwise is clearly faster in the tail as
+noise grows. A plausible reason: for 9 options the pairwise encoding is only 36 binary clauses with no auxiliary
+variables, which propagate directly. The sequential counter's auxiliary variables give RC2 more to search
+through. A maximum of about 2 s appears for both at 10% noise.
+
 ## Files
 
 | File | What it does |
 |---|---|
 | `encoding.py` | variables, hard and soft clauses, `build_wcnf(prob)`, `decode_model` |
-| `solver.py` | `solve(prob, require_unique=False)`: RC2 MaxSAT, overrides with reasons, uniqueness check or loop; `sat_solve`, `count_solutions` for exact givens |
-| `baselines.py` | `argmax_then_sat` (trust CNN fully), `threshold_then_sat` (drop digits below confidence tau) |
+| `solver.py` | `solve(prob, require_unique=False)`: RC2 MaxSAT, uniqueness check or loop; `sat_solve`, `count_solutions` for exact givens |
+| `baselines.py` | `argmax_then_sat` (trust CNN fully), `threshold_then_sat` (drop digits below confidence tau), `unweighted_maxsat` (ablation: rules without confidences) |
 | `generator.py` | seeded random solutions (backtracking) and unique puzzles with ~30 givens; `redundant_givens` |
-| `explain.py` | text rendering of grids and overrides for the demo |
+| `explain.py` | `find_overrides` with unsat-core reasons (`conflict_core`), text rendering for the demo |
 
 ## Uniqueness check
 

@@ -20,7 +20,6 @@ from pysat.examples.rc2 import RC2Stratified
 from pysat.solvers import Solver
 
 from sudoku_ns.interfaces import (
-    Override,
     ProbGrid,
     SolveResult,
     SolveStatus,
@@ -34,6 +33,7 @@ from sudoku_ns.reasoning.encoding import (
     x_var,
     y_var,
 )
+from sudoku_ns.reasoning.explain import find_overrides
 
 SAT_SOLVER = "g4"  # Glucose 4
 
@@ -67,50 +67,6 @@ def count_solutions(givens: np.ndarray, limit: int = 2) -> int:
 
 def is_unique(givens: np.ndarray) -> bool:
     return count_solutions(givens, limit=2) == 1
-
-
-def _clash(grid: np.ndarray, r: int, c: int, d: int) -> str | None:
-    """Name the first row/column/box where digit d at (r, c) repeats a given in grid."""
-    for cc in range(9):
-        if cc != c and grid[r, cc] == d:
-            return f"{d} clashes with {d} at ({r}, {cc}) in row {r}"
-    for rr in range(9):
-        if rr != r and grid[rr, c] == d:
-            return f"{d} clashes with {d} at ({rr}, {c}) in column {c}"
-    br, bc = 3 * (r // 3), 3 * (c // 3)
-    for rr in range(br, br + 3):
-        for cc in range(bc, bc + 3):
-            if (rr, cc) != (r, c) and grid[rr, cc] == d:
-                return f"{d} clashes with {d} at ({rr}, {cc}) in box {(r // 3) * 3 + c // 3}"
-    return None
-
-
-def find_overrides(prob: ProbGrid, read_givens: np.ndarray) -> list[Override]:
-    """Cells where the solver's reading differs from the CNN argmax.
-
-    The clash is checked against the other FINAL read givens: those are the
-    digits the solver kept, so a clash with one of them is the concrete reason
-    the argmax could not stay. If there is no direct clash the argmax was still
-    inconsistent (or more expensive) once the whole grid is considered, which we
-    report as "lower total cost".
-    """
-    argmax = prob.argmax(axis=2)
-    out = []
-    for r, c in zip(*np.nonzero(argmax != read_givens), strict=True):
-        a, f = int(argmax[r, c]), int(read_givens[r, c])
-        reason = (_clash(read_givens, r, c, a) if a >= 1 else None) or "lower total cost"
-        out.append(
-            Override(
-                row=int(r),
-                col=int(c),
-                cnn_label=a,
-                cnn_prob=float(prob[r, c, a]),
-                final_label=f,
-                final_prob=float(prob[r, c, f]),
-                reason=reason,
-            )
-        )
-    return out
 
 
 MAX_UNIQUE_ROUNDS = 50
@@ -154,10 +110,11 @@ def solve(
     try:
         validate_prob_grid(prob)
         wcnf = build_wcnf(prob, amo_encoding, shift)
-    except ValueError:
-        # Invalid ProbGrid (wrong shape, NaN, rows not summing to 1). Callers
-        # that want the message should call validate_prob_grid themselves.
-        return SolveResult(SolveStatus.ERROR, solve_time_s=time.perf_counter() - t0)
+    except ValueError as e:
+        # Invalid ProbGrid (wrong shape, NaN, rows not summing to 1).
+        return SolveResult(
+            SolveStatus.ERROR, solve_time_s=time.perf_counter() - t0, message=f"perception: {e}"
+        )
 
     unique = None
     for _ in range(MAX_UNIQUE_ROUNDS if require_unique else 1):
@@ -181,7 +138,11 @@ def solve(
     if model is None:
         # Without require_unique this cannot happen for a valid ProbGrid
         # (reading every cell as empty is always consistent).
-        return SolveResult(SolveStatus.UNSAT, solve_time_s=elapsed)
+        return SolveResult(
+            SolveStatus.UNSAT,
+            solve_time_s=elapsed,
+            message="reasoning: no reading with a unique solution found",
+        )
 
     if unique is None and check_unique:
         unique = is_unique(read_givens)
