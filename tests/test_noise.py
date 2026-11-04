@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from sudoku_ns.synth.noise import apply_noise, blur, gaussian_noise, jpeg, rotate
+from sudoku_ns.synth.noise import apply_noise, blur, clutter, gaussian_noise, jpeg, lighting, rotate
 
 
 @pytest.fixture
@@ -17,7 +17,7 @@ def mse(a, b):
     return float(((a.astype(np.float32) - b.astype(np.float32)) ** 2).mean())
 
 
-@pytest.mark.parametrize("fn", [blur, rotate, gaussian_noise])
+@pytest.mark.parametrize("fn", [blur, rotate, gaussian_noise, lighting])
 def test_zero_severity_is_identity(fn, img):
     np.testing.assert_array_equal(fn(img, 0.0), img)
 
@@ -27,20 +27,20 @@ def test_jpeg_zero_severity_is_near_lossless(img):
     assert mse(jpeg(img, 0.0), img) < 50
 
 
-@pytest.mark.parametrize("fn", [blur, rotate, jpeg, gaussian_noise])
+@pytest.mark.parametrize("fn", [blur, rotate, jpeg, gaussian_noise, lighting])
 def test_damage_grows_with_severity(fn, img):
     errs = [mse(fn(img, s), img) for s in (0.25, 0.5, 1.0)]
     assert errs == sorted(errs) and errs[0] > 0
 
 
-@pytest.mark.parametrize("fn", [blur, rotate, jpeg, gaussian_noise])
+@pytest.mark.parametrize("fn", [blur, rotate, jpeg, gaussian_noise, lighting])
 def test_shape_and_dtype_preserved(fn, img):
     for x in (img, img[..., 0].copy()):
         out = fn(x, 0.7)
         assert out.shape == x.shape and out.dtype == np.uint8
 
 
-@pytest.mark.parametrize("fn", [blur, rotate, jpeg, gaussian_noise])
+@pytest.mark.parametrize("fn", [blur, rotate, jpeg, gaussian_noise, lighting])
 def test_rejects_bad_severity(fn, img):
     with pytest.raises(ValueError, match="severity"):
         fn(img, 1.5)
@@ -54,3 +54,13 @@ def test_apply_noise_composes_and_validates(img):
     )
     with pytest.raises(ValueError, match="unknown"):
         apply_noise(img, {"fog": 0.5})
+
+
+def test_clutter_leaves_the_grid_untouched(img):
+    big = np.full((300, 300, 3), 120, np.uint8)
+    big[100:196, 100:196] = img
+    corners = np.array([[100, 100], [195, 100], [195, 195], [100, 195]], np.float32)
+    out = clutter(big, corners, 1.0, seed=0)
+    np.testing.assert_array_equal(out[100:196, 100:196], img)
+    assert mse(out, big) > 0
+    np.testing.assert_array_equal(clutter(big, corners, 0.0), big)
