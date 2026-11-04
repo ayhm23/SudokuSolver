@@ -114,3 +114,6 @@ class SolveResult:
     unique: bool | None = None  # None when uniqueness was not checked
     cost: int | None = None  # MaxSAT objective (sum of violated soft weights)
     solve_time_s: float = 0.0
+    # Why the result is ERROR/UNSAT, prefixed with the failing stage, e.g.
+    # "vision: no contours after thresholding". None when SOLVED.
+    message: str | None = None
