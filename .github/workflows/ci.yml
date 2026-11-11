@@ -13,10 +13,12 @@ jobs:
         with:
           python-version: "3.11"
           cache: pip
-      - name: Install (CPU only, no ml extra)
+      - name: Install (CPU-only torch, so the perception tests run)
         run: |
           python -m pip install --upgrade pip
-          pip install -e ".[dev]"
+          # The default PyPI torch wheel bundles CUDA (~2 GB); the CPU index is ~200 MB.
+          pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
+          pip install -e ".[dev,ml]"
       - name: Ruff
         run: |
           ruff check .

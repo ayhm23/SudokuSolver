@@ -3,7 +3,7 @@ import pytest
 
 from sudoku_ns.perception.dataset import (
     augment,
-    build_dataset,
+    build_split,
     class_counts,
     crops_from_render,
     font_family,
@@ -12,6 +12,8 @@ from sudoku_ns.perception.dataset import (
     torch_dataset,
 )
 from sudoku_ns.synth.render import save_render
+from sudoku_ns.vision.cell_extract import extract_cells
+from sudoku_ns.vision.grid_detect import find_grid_corners
 
 
 def test_font_family_groups_weights_together():
@@ -24,38 +26,47 @@ def test_font_family_groups_weights_together():
     )
 
 
-def test_crops_match_labels(renders):
-    crops, labels = crops_from_render(renders[0])
-    assert crops.shape == (81, 32, 32) and crops.dtype == np.uint8
-    np.testing.assert_array_equal(labels, renders[0].givens.ravel())
-    # Digit crops contain dark ink; empty crops are mostly paper.
+def test_crops_are_exactly_the_pipeline_crops(renders):
+    # The coupling the CNN relies on: dataset crops == what the pipeline feeds it.
+    r = renders[0]
+    crops, labels, err = crops_from_render(r)
+    pipeline = extract_cells(r.image, find_grid_corners(r.image))
+    np.testing.assert_array_equal(crops, np.round(pipeline * 255).astype(np.uint8))
+    np.testing.assert_array_equal(labels, r.givens.ravel())
+    assert err < 5.0
     ink = (crops < 100).mean(axis=(1, 2))
     assert ink[labels > 0].mean() > 3 * ink[labels == 0].mean()
 
 
 def test_augment_changes_but_keeps_format(renders):
-    crops, _ = crops_from_render(renders[0])
+    crops, _, _ = crops_from_render(renders[0])
     out = augment(crops[0], np.random.default_rng(0))
     assert out.shape == (32, 32) and out.dtype == np.uint8
     assert not np.array_equal(out, crops[0])
 
 
-def test_build_dataset_splits_and_saves(renders, tmp_path):
+def test_build_split_checks_fonts_and_saves(renders, tmp_path):
     for i, r in enumerate(renders[:2]):
         save_render(r, tmp_path / "renders", f"{i:05d}")
-    ds = build_dataset(tmp_path / "renders", n_aug=1, font_manifest=None)
-    # DejaVu Sans is not held out, so everything is train: 2 renders x 81 x (1 + 1 aug).
-    assert len(ds["train"]["y"]) == 2 * 81 * 2 and len(ds["test"]["y"]) == 0
-    assert class_counts(ds["train"]["y"]).sum() == len(ds["train"]["y"])
-    save_npz(ds, tmp_path / "d.npz")
+    # DejaVu Sans is not held out, so it belongs to train ...
+    data, counts = build_split(tmp_path / "renders", "train", font_manifest=None)
+    assert len(data["y"]) == 2 * 81 and counts["not_found"] == 0
+    assert class_counts(data["y"]).sum() == len(data["y"])
+    save_npz({"train": data}, tmp_path / "d.npz")
     with np.load(tmp_path / "d.npz") as z:
-        assert z["train_x"].shape == (324, 32, 32)
+        assert z["train_x"].shape == (162, 32, 32)
+    # ... and using it as a test directory is refused (would leak fonts).
+    with pytest.raises(ValueError, match="does not belong"):
+        build_split(tmp_path / "renders", "test", font_manifest=None)
 
 
 def test_torch_wrapper(renders, tmp_path):
     pytest.importorskip("torch")
     save_render(renders[0], tmp_path / "r", "00000")
-    save_npz(build_dataset(tmp_path / "r", n_aug=0, font_manifest=None), tmp_path / "d.npz")
+    data, _ = build_split(tmp_path / "r", font_manifest=None)
+    save_npz({"train": data}, tmp_path / "d.npz")
     ds = torch_dataset(tmp_path / "d.npz", "train")
     x, y = ds[0]
     assert len(ds) == 81 and tuple(x.shape) == (1, 32, 32) and 0 <= float(x.max()) <= 1
+    aug = torch_dataset(tmp_path / "d.npz", "train", augment_seed=0)
+    assert not np.array_equal(aug[0][0].numpy(), x.numpy())

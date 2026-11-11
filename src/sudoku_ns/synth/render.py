@@ -138,8 +138,8 @@ def render_puzzle(
     return Render(image, givens.copy(), solution.copy(), img_corners, font_path.name)
 
 
-def save_render(r: Render, out_dir: Path, stem: str) -> None:
-    """Write <stem>.png and <stem>.json (givens, solution, corners, font)."""
+def save_render(r: Render, out_dir: Path, stem: str, extra: dict | None = None) -> None:
+    """Write <stem>.png and <stem>.json (givens, solution, corners, font, + extra keys)."""
     out_dir.mkdir(parents=True, exist_ok=True)
     Image.fromarray(r.image).save(out_dir / f"{stem}.png")
     meta = {
@@ -149,6 +149,7 @@ def save_render(r: Render, out_dir: Path, stem: str) -> None:
         "corners": r.corners.round(2).tolist(),
         "corner_order": "tl, tr, br, bl (x, y)",
         "font": r.font,
+        **(extra or {}),
     }
     (out_dir / f"{stem}.json").write_text(json.dumps(meta))
 
