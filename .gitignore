@@ -1,5 +1,8 @@
-# Data and outputs are never committed
-data/
+# Data and outputs are never committed (except the real-photo capture protocol)
+data/*
+!data/real/
+data/real/*
+!data/real/README.md
 outputs/
 
 # Model checkpoints

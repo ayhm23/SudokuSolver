@@ -1,0 +1,8 @@
+{
+  "name": "e2e_test_noise_cnn",
+  "datasets": ["data/synthetic/test_noise/*"],
+  "perceiver": {"type": "cnn", "checkpoint": "outputs/models/cnn_v1/model.pt", "use_temperature": true},
+  "methods": ["maxsat_weighted", "maxsat_unweighted", "argmax_then_sat", "threshold_then_sat", "maxsat_unique"],
+  "tau": 0.5,
+  "seed": 0
+}
