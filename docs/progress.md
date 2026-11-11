@@ -50,3 +50,31 @@ One entry per commit, newest at the bottom. Each says what changed and where to 
 
 10. **docs: CI badge in README**
     Shows the status of the latest GitHub Actions run (ruff + pytest) at the top of the README.
+
+## Week 2
+
+One PR per area, merged in this order (perception's dataset is cut with the new vision code). The README,
+[dataflow.md](dataflow.md) and this log were updated in the last PR.
+
+11. **feat(reasoning): unsat-core explanations, unweighted ablation, encoding benchmark**
+    `explain.find_overrides` gives each override a reason from a minimal unsat core (direct clash or indirect
+    conflict), replacing the Week 1 row/column/box scan. `baselines.unweighted_maxsat` = rules without confidences.
+    `bench_encoding.py`: pairwise stays default (p95 267 ms vs 384 ms at 20% error). `SolveResult` gets a
+    `message` field saying which stage failed and why. See [reasoning.md](reasoning.md), [interfaces.md](interfaces.md).
+
+12. **feat(vision): robust detection, cell cleaning, noise-type evaluation** (closes #2)
+    3 binarisations, shape ranking, line-structure verification, line-centre corner refinement; `clean_cell`
+    erases border line remnants and centres digits, never decides "empty". New `noise.lighting` and `noise.clutter`.
+    100% detection in all 25 conditions on held-out renders (Week 1: 22% at noise severity 1.0); corner error
+    1.7 → about 1.1 px. See [vision.md](vision.md).
+
+13. **feat(perception): dataset from the pipeline's own crops, CNN, temperature scaling, CNNPerceiver** (closes #1)
+    2,000 / 300 / 200 renders in disjoint font families; crops via detection + `extract_cells`. `cnn_v1`: val 100.00%,
+    test 99.26% (all errors: Space Mono 5→6 and 9→8); T = 1.10, test NLL 0.0231 → 0.0217. CI installs CPU torch.
+    See [perception.md](perception.md).
+
+14. **feat(eval): end-to-end harness, CLI, real-photo tooling** (closes #3; #4 stays open until the photos exist)
+    `run_e2e.py` / `summarize_e2e.py` / `tune_threshold.py`, `configs/`, `pipeline` CLI with visualisation, vision
+    failures → `SolveResult(ERROR, message="vision: ...")` instead of an exception, capture protocol
+    `data/real/README.md` and `label_real.py`. test_clean: maxsat_unique 98.0%, maxsat_weighted 89.5%, unweighted 77.5%, argmax 74.5% solved.
+    See [evaluation.md](evaluation.md#week-2-end-to-end-with-the-real-cnn-scriptsrun_e2epy).
