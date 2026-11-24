@@ -102,6 +102,8 @@ method and writes `outputs/e2e/<name>.csv`; `scripts/summarize_e2e.py` turns it 
 | `bench_encoding.py` | `outputs/bench_encoding.csv` |
 | `sweep_simulated.py` | `outputs/<name>.{csv,png}` + `<name>_rows.csv` (one row per puzzle); `--config` JSON |
 | `render_final_sets.sh` | `data/synthetic/{test_final,val_noise}/<type>_<s>/` (Week 3 sweep and tau tuning sets) |
+| `dump_cell_logits.py` | `outputs/e2e/cell_logits_<set>.npz` (per-cell logits + true class, for calibration) |
+| `make_report.py` | `report/results/*.csv`, `report/results/RESULTS.md`, `report/figures/fig*.{png,pdf}` |
 | `run_detached.ps1` | starts a long run that survives closing the terminal; log in `outputs/logs/<name>.log` |
 | `demo_reasoning.py` | stdout |
 | `python -m sudoku_ns.pipeline` | stdout + `<photo>_solved.png` |

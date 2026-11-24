@@ -18,7 +18,8 @@ New-Item -ItemType Directory -Force $logDir | Out-Null
 $log = Join-Path $logDir "$Name.log"
 $envs = "set PYTHONUTF8=1&& "
 if ($Threads -gt 0) { $envs += "set OMP_NUM_THREADS=$Threads&& set MKL_NUM_THREADS=$Threads&& " }
-$cmdline = "cmd.exe /c `"$envs$Command > `"$log`" 2>&1`""
+# Parentheses: without them cmd applies "> log" only to the LAST command of an "&&" chain.
+$cmdline = "cmd.exe /c `"$envs($Command) > `"$log`" 2>&1`""
 $r = Invoke-CimMethod -ClassName Win32_Process -MethodName Create `
     -Arguments @{ CommandLine = $cmdline; CurrentDirectory = $root }
 if ($r.ReturnValue -ne 0) { throw "Win32_Process.Create failed with code $($r.ReturnValue)" }

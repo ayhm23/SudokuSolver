@@ -89,3 +89,11 @@ One PR per area, merged in this order (perception's dataset is cut with the new 
     `--config`, and a per-puzzle CSV. New sets from `scripts/render_final_sets.sh`: `test_final/` (TEST fonts, new
     seed 40000, 100 images x 16 sets incl. clean) and `val_noise/` (VAL fonts, 50 x 15). Configs:
     `configs/e2e_final_noise_cnn*.json`, `configs/ablations/`. `scripts/run_detached.ps1` = nohup for Windows.
+
+16. **feat(eval): report generator for the final results**
+    `scripts/make_report.py` turns the raw run CSVs into small summary CSVs (95% Wilson intervals, cell accuracy
+    before/after, corrections vs wrong overrides, UNSAT rate, median/p95 time, failure stage), the 7 figures
+    (PNG 300 dpi + PDF, one fixed style per method, readable in black and white) and `report/results/RESULTS.md`,
+    which contains tables only, generated from the CSVs so no number is typed by hand. `scripts/dump_cell_logits.py`
+    saves per-cell logits on the test sets for the reliability diagram. `run_detached.ps1` now logs every
+    command of an `&&` chain (before, cmd redirected only the last one).
