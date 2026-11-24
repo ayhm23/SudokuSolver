@@ -223,6 +223,41 @@ Reading it carefully:
   cells) took **134 s** and still ended with an ambiguous reading. Two others took 61 s and 58 s. A time limit, or
   fewer rounds, is needed before the demo.
 
+## Week 3: final sweep and ablations
+
+All numbers: **[report/results/RESULTS.md](../report/results/RESULTS.md)** (tables generated from the CSVs next
+to it; figures in [report/figures/](../report/figures/)). This section only says what was run and how to
+reproduce it.
+
+What is new compared with the preliminary noisy sets above:
+
+- **New test images** `data/synthetic/test_final/`: TEST fonts, seed 40000 (never used before), 100 images per
+  set, 16 sets (clean + 5 noise types x severities 0.25 / 0.5 / 1.0). All sets use the same 100 puzzles, so they
+  are paired: a difference between two sets comes from the noise, not from different puzzles.
+- **95% Wilson intervals** on every solve rate. Pooled rows ignore the pairing, so their intervals are optimistic.
+- **tau chosen on noisy VAL** (`data/synthetic/val_noise/`, VAL fonts, 15 sets x 50): the clean val set solves
+  99.7% at every tau from 0.5 to 0.9, so it could not separate them. The noisy val set gives 0.5 again.
+- **Ablations**, all on the same test images: temperature scaling off, SCALE in {10, 100, 1000, 10000}, EPS in
+  {1e-3, 1e-6, 1e-9}, and reasoning in isolation (simulated CNN, misread rate 0-30%, 300 puzzles per rate).
+- A reproducibility check: re-running maxsat_weighted with SCALE / EPS passed explicitly gives the same result
+  on every image as the main sweep.
+
+Reproduce (about 1.5 h on this laptop when the runs overlap; long runs can be started with
+`scripts/run_detached.ps1` so they survive closing the terminal; `run_e2e.py` resumes):
+
+```
+bash scripts/render_final_sets.sh
+python scripts/tune_threshold.py --checkpoint outputs/models/cnn_v1/model.pt \
+    --renders "data/synthetic/val_noise/*" --out outputs/tune_threshold_val_noise.json
+python scripts/run_e2e.py --config configs/e2e_final_noise_cnn.json          # ~7 min, alone
+python scripts/run_e2e.py --config configs/e2e_final_noise_cnn_unique.json   # ~14 min
+python scripts/run_e2e.py --config configs/ablations/<each>.json             # ~5-20 min each
+python scripts/sweep_simulated.py --config configs/ablations/sweep_simulated_n300.json   # ~15 min
+python scripts/dump_cell_logits.py --renders "data/synthetic/test_final/*" \
+    --out outputs/e2e/cell_logits_test_final.npz
+python scripts/make_report.py
+```
+
 ## Demo (`scripts/demo_reasoning.py`)
 
 ```

@@ -97,3 +97,10 @@ One PR per area, merged in this order (perception's dataset is cut with the new 
     which contains tables only, generated from the CSVs so no number is typed by hand. `scripts/dump_cell_logits.py`
     saves per-cell logits on the test sets for the reliability diagram. `run_detached.ps1` now logs every
     command of an `&&` chain (before, cmd redirected only the last one).
+
+17. **results: Week 3 final sweep and ablations**
+    `report/results/` (summary CSVs + `RESULTS.md`, tables only) and `report/figures/` (7 figures, PNG + PDF),
+    all produced by `make_report.py` from the runs listed in `configs/README.md`. Main sweep: 1,600 test images x
+    5 methods; ablations: temperature off, SCALE 10-10000, EPS 1e-3-1e-9 (maxsat_weighted, same images), tau on
+    noisy VAL (0.5), simulated sweep (300 puzzles x 9 error rates). How to reproduce:
+    [evaluation.md](evaluation.md#week-3-final-sweep-and-ablations).
