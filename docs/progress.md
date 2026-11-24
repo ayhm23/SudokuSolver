@@ -120,3 +120,9 @@ One PR per area, merged in this order (perception's dataset is cut with the new 
     now also resamples puzzles (10,000 resamples, seed 0) and reports both intervals side by side, plus the paired
     difference maxsat_weighted - argmax_then_sat on identical resamples (RESULTS.md sections 1d-1e,
     `e2e_pooled_bootstrap.csv`, `e2e_paired_diff_bootstrap.csv`). Existing tables are unchanged.
+
+21. **analysis: maxsat_unique runtime tail and a timeout what-if** (report only, default unchanged)
+    `scripts/unique_tail.py` re-solves the images whose recorded maxsat_unique time is over 10 s to recover their
+    cost and solver-call counts (counted by wrapping the solver classes from the script), and checks against the
+    recorded data what a T-second timeout with fallback to the maxsat_weighted answer would change.
+    `report/results/unique_tail.md`.

@@ -1,0 +1,6 @@
+set,image,noise,font,misread_cells,csv_time_s,rerun_time_s,maxsat_calls,unique_checks,cost_returned,cost_maxsat_weighted,unique,correct,csv_correct,maxsat_weighted_correct
+blur_0.5,00028,"{""blur"": 0.5}",SpaceMono-Regular.ttf,10,86.8,32.0,42,42,25392,15536,True,False,False,False
+blur_1.0,00093,"{""blur"": 1.0}",SpaceMono-Regular.ttf,5,75.0,37.7,50,50,26653,21968,False,False,False,False
+blur_0.5,00093,"{""blur"": 0.5}",SpaceMono-Regular.ttf,10,66.4,32.8,33,33,27198,19243,True,False,False,False
+blur_1.0,00010,"{""blur"": 1.0}",SpaceMono-Regular.ttf,5,16.0,7.6,21,21,8812,4021,True,True,True,False
+blur_0.25,00093,"{""blur"": 0.25}",SpaceMono-Regular.ttf,5,12.7,7.7,14,14,23930,17612,True,False,False,False
