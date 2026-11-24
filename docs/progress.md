@@ -104,3 +104,8 @@ One PR per area, merged in this order (perception's dataset is cut with the new 
     5 methods; ablations: temperature off, SCALE 10-10000, EPS 1e-3-1e-9 (maxsat_weighted, same images), tau on
     noisy VAL (0.5), simulated sweep (300 puzzles x 9 error rates). How to reproduce:
     [evaluation.md](evaluation.md#week-3-final-sweep-and-ablations).
+
+18. **analysis: why unweighted MaxSAT fixes 0 misreads** (read-only, no method or metric change)
+    `scripts/check_unweighted.py` re-runs `unweighted_maxsat` on the probabilities rebuilt from the PR #9 logit
+    dump, reproduces every CSV row, and shows the 0 is forced by construction: the method can only keep or blank a
+    CNN digit, and every misread in test_final is a digit substitution. Report: `report/results/unweighted_check.md`.
