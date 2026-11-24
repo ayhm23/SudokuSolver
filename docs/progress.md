@@ -109,3 +109,8 @@ One PR per area, merged in this order (perception's dataset is cut with the new 
     `scripts/check_unweighted.py` re-runs `unweighted_maxsat` on the probabilities rebuilt from the PR #9 logit
     dump, reproduces every CSV row, and shows the 0 is forced by construction: the method can only keep or blank a
     CNN digit, and every misread in test_final is a digit substitution. Report: `report/results/unweighted_check.md`.
+
+19. **analysis: CNN confusion pairs and noisy-vs-clean cell flips** (read-only)
+    `scripts/analyse_cells.py` (from the PR #9 logit dump): top (true -> read) pairs overall, per noise type and per
+    font (`report/results/confusions.md`, figure `fig8_confusions`), and per noise set the cells that flip relative
+    to the clean render of the same puzzle, with the Space Mono "5" cells broken out (`noise_flips.md`).

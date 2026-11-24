@@ -104,6 +104,7 @@ method and writes `outputs/e2e/<name>.csv`; `scripts/summarize_e2e.py` turns it 
 | `render_final_sets.sh` | `data/synthetic/{test_final,val_noise}/<type>_<s>/` (Week 3 sweep and tau tuning sets) |
 | `dump_cell_logits.py` | `outputs/e2e/cell_logits_<set>.npz` (per-cell logits + true class, for calibration) |
 | `check_unweighted.py` | `report/results/unweighted_check.md` (cell-level check of maxsat_unweighted) |
+| `analyse_cells.py` | `report/results/{confusions,noise_flips}.{csv,md}`, `report/figures/fig8_confusions` |
 | `make_report.py` | `report/results/*.csv`, `report/results/RESULTS.md`, `report/figures/fig*.{png,pdf}` |
 | `run_detached.ps1` | starts a long run that survives closing the terminal; log in `outputs/logs/<name>.log` |
 | `demo_reasoning.py` | stdout |
