@@ -42,6 +42,8 @@ MAIN = E2E / "e2e_final_noise_cnn.csv"
 UNIQUE = E2E / "e2e_final_noise_cnn_unique.csv"
 LOGITS = E2E / "cell_logits_test_final.npz"
 SIM_ROWS = Path("outputs/sim/sweep_simulated_n300_rows.csv")
+SIM_CFG = "configs/ablations/sweep_simulated_n300.json"
+SIM_TAU = json.loads(Path(SIM_CFG).read_text("utf-8"))["tau"]
 TAU_JSON = Path("outputs/tune_threshold_val_noise.json")
 CFG_MAIN = "configs/e2e_final_noise_cnn.json"
 CFG_UNIQUE = "configs/e2e_final_noise_cnn_unique.json"
@@ -354,7 +356,8 @@ def fig_corrections(pooled, methods):
         loc="left",
         color=INK2,
     )
-    ax.legend(loc="upper right")
+    ax.legend(loc="upper center", bbox_to_anchor=(0.5, 0.98))
+    ax.set_ylim(0, 1.12 * max(r["misreads_corrected"] for r in rows) + 1)
     style_axes(ax)
     fig.tight_layout()
     save(fig, "fig2_corrections_vs_overrides")
@@ -404,8 +407,14 @@ def fig_failure_stages(by_set, methods):
 def fig_solve_time(rows, methods):
     fig, ax = plt.subplots(figsize=(5.6, 3.4))
     for m in methods:
-        t = np.sort([1000 * float(r["solve_time_s"]) for r in rows if r["method"] == m])
-        t = np.maximum(t, 1e-2)
+        # Vision failures never reach the solver (time 0); excluded, as in the tables.
+        t = np.sort(
+            [
+                1000 * float(r["solve_time_s"])
+                for r in rows
+                if r["method"] == m and r["status"] != "error"
+            ]
+        )
         c, mk, ls = STYLE[m]
         y = np.arange(1, len(t) + 1) / len(t)
         ax.plot(t, 100 * y, color=c, ls=ls, lw=1.6, label=label(m))
@@ -504,6 +513,16 @@ def fig_calibration(per_type, cells):
             if i == 0:
                 ax.set_ylabel("accuracy in bin")
             ax.set_title(f"T = {t:.3f}\nECE {row['ece']:.4f}, NLL {row['nll']:.4f}", fontsize=8)
+            low = int((conf <= edges[-2]).sum())
+            ax.text(
+                0.03,
+                0.97,
+                f"{low} of {len(conf)} cells\nhave conf. ≤ {edges[-2]:.3f}",
+                transform=ax.transAxes,
+                va="top",
+                fontsize=6.5,
+                color=INK2,
+            )
             style_axes(ax, ygrid=False)
     ax = fig.add_subplot(gs[0, 2])
     variants = [
@@ -515,7 +534,7 @@ def fig_calibration(per_type, cells):
     w = 0.38
     for j, (v, lab, face, hatch) in enumerate(variants):
         rs = {r["noise"]: r for r in per_type if r["variant"] == v}
-        if not rs:
+        if any(k not in rs for k in kinds):  # run incomplete
             continue
         y = [rs[k]["solve_pct"] for k in kinds]
         err = [
@@ -535,10 +554,13 @@ def fig_calibration(per_type, cells):
             label=lab,
         )
     ax.set_xticks(x)
-    ax.set_xticklabels([k.replace("gaussian_noise", "noise") for k in kinds], fontsize=7.5)
+    ax.set_xticklabels(
+        [k.replace("gaussian_noise", "noise") for k in kinds], fontsize=7, rotation=30, ha="right"
+    )
     ax.set_ylabel("maxsat_weighted solved (%)")
-    ax.set_ylim(0, 100)
-    ax.legend(loc="lower right", fontsize=7.5)
+    ax.set_ylim(0, 118)
+    ax.set_yticks(range(0, 101, 20))
+    ax.legend(loc="upper center", ncol=2, fontsize=7.5, bbox_to_anchor=(0.5, 1.0))
     ax.set_title("solve rate with / without T (95% CI)", fontsize=8)
     style_axes(ax)
     fig.tight_layout()
@@ -707,7 +729,7 @@ def fig_sim(sim):
             ms=5,
             mec="white",
             mew=0.6,
-            label=label(m),
+            label=f"{m} (tau {SIM_TAU})" if m == "threshold_then_sat" else m,
         )
     ax.set_xlabel("simulated misread rate (%)")
     ax.set_ylabel("puzzles solved correctly (%)")
@@ -827,6 +849,10 @@ def main() -> None:
         ]
         md += [
             "### 2a-c. Calibration, SCALE, EPS (maxsat_weighted only) (`ablations.csv`)",
+            "",
+            "Timing note: the ablation runs ran 2-5 at a time on the same laptop, so their times "
+            "are inflated and not comparable with the main sweep's (`weighted_default` repeats "
+            "the main sweep's exact computation). Compare times only within this table, with care.",
             "",
             md_table(abl, cols),
             "",
