@@ -114,3 +114,9 @@ One PR per area, merged in this order (perception's dataset is cut with the new 
     `scripts/analyse_cells.py` (from the PR #9 logit dump): top (true -> read) pairs overall, per noise type and per
     font (`report/results/confusions.md`, figure `fig8_confusions`), and per noise set the cells that flip relative
     to the clean render of the same puzzle, with the Space Mono "5" cells broken out (`noise_flips.md`).
+
+20. **results: cluster-bootstrap intervals for pooled solve rates**
+    The 16 test_final sets share the same 100 puzzles, so pooled Wilson intervals are too narrow. `make_report.py`
+    now also resamples puzzles (10,000 resamples, seed 0) and reports both intervals side by side, plus the paired
+    difference maxsat_weighted - argmax_then_sat on identical resamples (RESULTS.md sections 1d-1e,
+    `e2e_pooled_bootstrap.csv`, `e2e_paired_diff_bootstrap.csv`). Existing tables are unchanged.

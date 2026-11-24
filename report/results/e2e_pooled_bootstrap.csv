@@ -1,0 +1,56 @@
+method,group,n_rows,n_puzzles,solve_pct,wilson_lo_pct,wilson_hi_pct,boot_lo_pct,boot_hi_pct
+maxsat_weighted,clean,100,100,89.0,81.3685,93.7459,83.0,95.0
+maxsat_unweighted,clean,100,100,67.0,57.3052,75.437,58.0,76.0
+argmax_then_sat,clean,100,100,66.0,56.2775,74.5386,57.0,75.0
+threshold_then_sat,clean,100,100,66.0,56.2775,74.5386,57.0,75.0
+maxsat_unique,clean,100,100,91.0,83.7736,95.1928,85.0,96.0
+maxsat_weighted,severity 0.25 (5 noise types),500,100,90.4,87.5012,92.6827,85.0,95.0
+maxsat_unweighted,severity 0.25 (5 noise types),500,100,67.0,62.7625,70.9783,58.195,75.6
+argmax_then_sat,severity 0.25 (5 noise types),500,100,64.2,59.9041,68.2793,55.2,73.0
+threshold_then_sat,severity 0.25 (5 noise types),500,100,64.2,59.9041,68.2793,55.2,73.0
+maxsat_unique,severity 0.25 (5 noise types),500,100,92.8,90.1931,94.7542,88.2,96.8
+maxsat_weighted,severity 0.5 (5 noise types),500,100,87.0,83.7678,89.668,81.4,91.8
+maxsat_unweighted,severity 0.5 (5 noise types),500,100,66.4,62.1486,70.4013,57.6,74.8
+argmax_then_sat,severity 0.5 (5 noise types),500,100,64.2,59.9041,68.2793,55.2,72.805
+threshold_then_sat,severity 0.5 (5 noise types),500,100,64.2,59.9041,68.2793,55.2,72.805
+maxsat_unique,severity 0.5 (5 noise types),500,100,90.0,87.0577,92.3323,85.2,94.0
+maxsat_weighted,severity 1.0 (5 noise types),500,100,87.6,84.4212,90.2054,83.2,91.8
+maxsat_unweighted,severity 1.0 (5 noise types),500,100,67.6,63.3771,71.5545,59.6,75.4
+argmax_then_sat,severity 1.0 (5 noise types),500,100,62.6,58.2778,66.7301,53.8,71.2
+threshold_then_sat,severity 1.0 (5 noise types),500,100,62.6,58.2778,66.7301,53.8,71.2
+maxsat_unique,severity 1.0 (5 noise types),500,100,90.8,87.9461,93.0318,86.8,94.4
+maxsat_weighted,blur (3 severities),300,100,76.3333,71.2096,80.7912,68.6667,83.6667
+maxsat_unweighted,blur (3 severities),300,100,57.6667,52.0132,63.1262,48.3333,67.0
+argmax_then_sat,blur (3 severities),300,100,57.0,51.344,62.479,47.6667,66.3333
+threshold_then_sat,blur (3 severities),300,100,57.0,51.344,62.479,47.6667,66.3333
+maxsat_unique,blur (3 severities),300,100,80.6667,75.8215,84.7363,74.0,87.0
+maxsat_weighted,gaussian_noise (3 severities),300,100,94.6667,91.513,96.6908,90.3333,98.3333
+maxsat_unweighted,gaussian_noise (3 severities),300,100,74.6667,69.4545,79.2551,66.3333,82.6667
+argmax_then_sat,gaussian_noise (3 severities),300,100,68.3333,62.8658,73.3373,59.3333,76.675
+threshold_then_sat,gaussian_noise (3 severities),300,100,68.3333,62.8658,73.3373,59.3333,76.675
+maxsat_unique,gaussian_noise (3 severities),300,100,96.3333,93.5546,97.9405,92.3333,99.3333
+maxsat_weighted,jpeg (3 severities),300,100,91.0,87.2222,93.741,86.0,95.3333
+maxsat_unweighted,jpeg (3 severities),300,100,69.0,63.5538,73.9657,60.3333,77.3333
+argmax_then_sat,jpeg (3 severities),300,100,65.3333,59.7847,70.4942,56.3333,74.0
+threshold_then_sat,jpeg (3 severities),300,100,65.3333,59.7847,70.4942,56.3333,74.0
+maxsat_unique,jpeg (3 severities),300,100,93.3333,89.9276,95.6433,89.0,97.0
+maxsat_weighted,lighting (3 severities),300,100,92.3333,88.7589,94.8373,87.0,97.0
+maxsat_unweighted,lighting (3 severities),300,100,69.6667,64.2431,74.593,61.0,78.3333
+argmax_then_sat,lighting (3 severities),300,100,66.6667,61.1511,71.7607,57.3333,75.3333
+threshold_then_sat,lighting (3 severities),300,100,66.6667,61.1511,71.7607,57.3333,75.3333
+maxsat_unique,lighting (3 severities),300,100,94.3333,91.1133,96.4323,89.6667,98.0
+maxsat_weighted,rotate (3 severities),300,100,87.3333,83.0918,90.6308,81.3333,92.6667
+maxsat_unweighted,rotate (3 severities),300,100,64.0,58.4228,69.2232,54.6667,73.0
+argmax_then_sat,rotate (3 severities),300,100,61.0,55.3748,66.3471,51.6667,70.0
+threshold_then_sat,rotate (3 severities),300,100,61.0,55.3748,66.3471,51.6667,70.0
+maxsat_unique,rotate (3 severities),300,100,91.3333,87.6043,94.0172,86.3333,95.6667
+maxsat_weighted,all 15 noisy sets,1500,100,88.3333,86.6099,89.8609,83.4667,92.6667
+maxsat_unweighted,all 15 noisy sets,1500,100,67.0,64.5796,69.3335,58.5333,75.0683
+argmax_then_sat,all 15 noisy sets,1500,100,63.6667,61.2006,66.0629,54.8,72.2667
+threshold_then_sat,all 15 noisy sets,1500,100,63.6667,61.2006,66.0629,54.8,72.2667
+maxsat_unique,all 15 noisy sets,1500,100,91.2,89.6591,92.5305,86.9333,94.8667
+maxsat_weighted,all 16 sets,1600,100,88.375,86.7117,89.8545,83.4375,92.75
+maxsat_unweighted,all 16 sets,1600,100,67.0,64.6576,69.2609,58.5,75.125
+argmax_then_sat,all 16 sets,1600,100,63.8125,61.4273,66.1315,54.875,72.4375
+threshold_then_sat,all 16 sets,1600,100,63.8125,61.4273,66.1315,54.875,72.4375
+maxsat_unique,all 16 sets,1600,100,91.1875,89.698,92.4797,86.875,94.9375
