@@ -1,0 +1,7 @@
+{
+  "name": "abl_calib_no_temperature",
+  "datasets": ["data/synthetic/test_final/*"],
+  "perceiver": {"type": "cnn", "checkpoint": "outputs/models/cnn_v1/model.pt", "use_temperature": false},
+  "methods": ["maxsat_weighted"],
+  "seed": 0
+}

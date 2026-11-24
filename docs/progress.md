@@ -78,3 +78,14 @@ One PR per area, merged in this order (perception's dataset is cut with the new 
     failures → `SolveResult(ERROR, message="vision: ...")` instead of an exception, capture protocol
     `data/real/README.md` and `label_real.py`. test_clean: maxsat_unique 98.0%, maxsat_weighted 89.5%, unweighted 77.5%, argmax 74.5% solved.
     See [evaluation.md](evaluation.md#week-2-end-to-end-with-the-real-cnn-scriptsrun_e2epy).
+
+## Week 3
+
+15. **feat(eval): ablation knobs and final-sweep configs** (no behaviour change)
+    `encoding.weight / soft_clauses / build_wcnf` and `solver.solve` take `scale` / `eps` (defaults = `SCALE` /
+    `EPS`; a test checks the defaults give the identical formula and result). `run_e2e.py` configs take
+    `method_kwargs`, and a resumed run cuts off a half-written last CSV row. `tune_threshold.py` takes several val
+    dirs and refuses test dirs. `sweep_simulated.py` gets `--rates`, `--methods` (adds `maxsat_unweighted`),
+    `--config`, and a per-puzzle CSV. New sets from `scripts/render_final_sets.sh`: `test_final/` (TEST fonts, new
+    seed 40000, 100 images x 16 sets incl. clean) and `val_noise/` (VAL fonts, 50 x 15). Configs:
+    `configs/e2e_final_noise_cnn*.json`, `configs/ablations/`. `scripts/run_detached.ps1` = nohup for Windows.

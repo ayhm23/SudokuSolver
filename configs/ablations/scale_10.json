@@ -1,0 +1,8 @@
+{
+  "name": "abl_scale_10",
+  "datasets": ["data/synthetic/test_final/*"],
+  "perceiver": {"type": "cnn", "checkpoint": "outputs/models/cnn_v1/model.pt", "use_temperature": true},
+  "methods": ["maxsat_weighted"],
+  "method_kwargs": {"maxsat_weighted": {"scale": 10}},
+  "seed": 0
+}

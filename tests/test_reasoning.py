@@ -303,3 +303,34 @@ def test_unweighted_maxsat_drops_fewest_digits(puzzle):
     assert int((res.read_givens != argmax).sum()) == 1
     [o] = res.overrides
     assert o.final_label == 0 and o.reason.startswith(f"conflicts with given {w}")
+
+
+def test_scale_eps_parameters_default_to_constants(puzzle):
+    # The ablation parameters must not change default behaviour.
+    from sudoku_ns.reasoning.encoding import EPS, SCALE
+
+    givens, _ = puzzle
+    p = one_hot(givens, conf=0.9)
+    set_cell(p, 0, 0, {3: 0.6, 0: 0.3})
+    for q in (1e-12, 1e-4, 0.3, 0.9):
+        assert weight(q) == weight(q, SCALE, EPS)
+    a = build_wcnf(p)
+    b = build_wcnf(p, scale=SCALE, eps=EPS)
+    assert a.soft == b.soft and a.wght == b.wght and a.hard == b.hard
+    ra, rb = solve(p), solve(p, scale=SCALE, eps=EPS)
+    assert ra.cost == rb.cost
+    np.testing.assert_array_equal(ra.read_givens, rb.read_givens)
+
+
+def test_scale_and_eps_change_the_weights():
+    assert weight(0.5, scale=10) == round(10 * np.log(2))
+    assert weight(1e-12, eps=1e-3) == round(1000 * -np.log(1e-3))
+    assert weight(1e-12, eps=1e-9) > weight(1e-12)  # default EPS 1e-6 clips harder
+
+
+def test_make_method_passes_solver_options_only_to_maxsat():
+    from sudoku_ns.pipeline import make_method
+
+    make_method("maxsat_weighted", scale=100, eps=1e-9)
+    with pytest.raises(ValueError):
+        make_method("argmax_then_sat", scale=100)

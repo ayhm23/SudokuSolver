@@ -59,7 +59,8 @@ the solver picks the most probable reading that is also a legal Sudoku. That is 
 ```
 
 Evaluation: `scripts/run_e2e.py --config configs/<name>.json` runs every image through vision → perceiver → each
-method and writes `outputs/e2e/<name>.csv`; `scripts/summarize_e2e.py` turns it into tables.
+method and writes `outputs/e2e/<name>.csv`; `scripts/summarize_e2e.py` turns it into tables. Ablation configs
+(`configs/ablations/`) use the same script; `method_kwargs` passes solver options such as `scale` / `eps`.
 
 ## Who calls whom
 
@@ -93,13 +94,15 @@ method and writes `outputs/e2e/<name>.csv`; `scripts/summarize_e2e.py` turns it 
 | `make_digit_dataset.py` | `data/digits/digits.npz` |
 | `python -m sudoku_ns.perception.train` | `outputs/models/<run>/{model.pt,config.json,history.json,metrics.json}` |
 | `python -m sudoku_ns.perception.calibrate` | T into `model.pt` and `metrics.json`, `reliability_{val,test}.png` |
-| `tune_threshold.py` | stdout: best tau on val |
+| `tune_threshold.py` | stdout: best tau on val (one or more val dirs/globs); `--out` JSON |
 | `run_e2e.py` | `outputs/e2e/<config name>.csv` |
 | `summarize_e2e.py` | stdout tables (or markdown) |
 | `label_real.py` | `data/real/<photo>.json` |
 | `eval_grid_detect.py` | stdout table, `outputs/vision_failures/{grid_detect.csv,<noise>/*.png}` |
 | `bench_encoding.py` | `outputs/bench_encoding.csv` |
-| `sweep_simulated.py` | `outputs/sweep_simulated.{csv,png}` |
+| `sweep_simulated.py` | `outputs/<name>.{csv,png}` + `<name>_rows.csv` (one row per puzzle); `--config` JSON |
+| `render_final_sets.sh` | `data/synthetic/{test_final,val_noise}/<type>_<s>/` (Week 3 sweep and tau tuning sets) |
+| `run_detached.ps1` | starts a long run that survives closing the terminal; log in `outputs/logs/<name>.log` |
 | `demo_reasoning.py` | stdout |
 | `python -m sudoku_ns.pipeline` | stdout + `<photo>_solved.png` |
 
