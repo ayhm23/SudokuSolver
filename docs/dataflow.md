@@ -118,6 +118,7 @@ stores each image's ProbGrid and detected corners as `.npz`, so figures can be d
 | `analyse_cells.py` | `report/results/{confusions,noise_flips}.{csv,md}`, `report/figures/fig8_confusions` |
 | `unique_tail.py` | `report/results/unique_tail.{csv,md}` (slow maxsat_unique images, timeout what-if) |
 | `real_photos_report.py` | `report/results/real_photos.md` + `real_photos_*.csv`, `report/figures/real/`, `outputs/real_vis/` |
+| `make_gallery.py` | `report/results/gallery.md`, `report/figures/gallery/*.{png,pdf}` (real examples, re-run and checked against the CSVs) |
 | `make_report.py` | `report/results/*.csv`, `report/results/RESULTS.md`, `report/figures/fig*.{png,pdf}` |
 | `run_detached.ps1` | starts a long run that survives closing the terminal; log in `outputs/logs/<name>.log` |
 | `demo_reasoning.py` | stdout |
