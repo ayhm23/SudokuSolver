@@ -126,3 +126,12 @@ One PR per area, merged in this order (perception's dataset is cut with the new 
     cost and solver-call counts (counted by wrapping the solver classes from the script), and checks against the
     recorded data what a T-second timeout with fallback to the maxsat_weighted answer would change.
     `report/results/unique_tail.md`.
+
+## Week 4: real photos (public dataset)
+
+22. **feat(reasoning): optional time limit for maxsat_unique**
+    `solve(..., require_unique=True, time_limit=T)` stops the uniqueness rounds after T seconds and returns the
+    first-round reading (= the maxsat_weighted answer), flagged with a `timeout:` message. Set per run with
+    `method_kwargs: {"maxsat_unique": {"time_limit": 10}}`. Off by default. Test:
+    `test_require_unique_time_limit_falls_back_to_first_round`. See [reasoning.md](reasoning.md).
+

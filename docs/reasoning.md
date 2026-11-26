@@ -114,6 +114,13 @@ puzzle seen in a separate 20% run took 167 s), because many cheap ambiguous read
 one; capped at 50 rounds. It can also break a correct reading to reach a unique one (1-5 cells per 30 puzzles). Each round rebuilds the RC2 solver,
 because pysat's `RC2Stratified` returned "no model" when clauses were added between `compute()` calls.
 
+**Optional time limit** (`solve(..., require_unique=True, time_limit=10)`, added for the real-photo evaluation):
+if no unique reading has been found after `time_limit` seconds, the loop stops and returns the *first-round*
+reading. Round 1 is the same MaxSAT solve as `maxsat_weighted`, so the fallback is exactly the weighted answer.
+The result is still `SOLVED`, with `message` starting `timeout:` so runs can count how often it happened. The clock
+is checked between rounds, so a round already running finishes first (the real time can exceed the limit by one
+round). Default: no limit, so the Week 3 results are unchanged.
+
 ## Explaining overrides with unsat cores (`explain.py`)
 
 Every override comes with a reason a person can check. For a cell where the CNN read digit `a` and the solver
