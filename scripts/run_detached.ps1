@@ -1,4 +1,4 @@
-# Start a long command so it keeps running after the terminal (or Claude Code session) closes.
+# Start a long command so it keeps running after the terminal session closes.
 # Windows has no nohup/tmux; a process created through WMI is not part of the caller's process
 # tree or job, so closing the caller does not kill it. Output goes to outputs/logs/<Name>.log.
 #
