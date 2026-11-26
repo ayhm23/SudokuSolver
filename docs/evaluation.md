@@ -300,6 +300,48 @@ Results: [real_photos.md](../report/results/real_photos.md) (per-method tables f
 split, cell accuracy before/after, vision check details, synthetic vs real, resolution and phone breakdowns,
 confusion pairs, figures in `report/figures/real/`).
 
+## Gallery: real successes and failures (`scripts/make_gallery.py`)
+
+```
+python scripts/make_gallery.py      # ~1.5 min: re-runs ~25 images, writes report/results/gallery.md + figures
+```
+
+One figure per kind of behaviour (MaxSAT fixes a misread that makes the argmax baseline UNSAT, removes a
+hallucinated digit, wrongly overrides a correct read, an ambiguous reading, vision failures, dense CNN errors,
+maxsat_unique beating maxsat_weighted, one real success and one real failure). The examples are never made up:
+
+1. A fixed rule over the run CSVs gives candidates (e.g. "maxsat_weighted correct and argmax_then_sat UNSAT").
+2. Each candidate is re-run exactly as `run_e2e.py` ran it (same loader, CNN, tau, solver options), because the
+   CSVs do not store the override explanations. The explanation text in `gallery.md` is what the system printed.
+3. The re-run must reproduce the CSV row, or the candidate is skipped and the skip is logged.
+4. The overrides are classified against the ground truth, and the candidate is kept only if it shows the category.
+
+Two things the gallery found that are worth knowing:
+
+- **The CNN never misses or invents a digit on synthetic images.** Over all 1,599 synthetic test_final grids,
+  0 cells were "true digit read as empty" and 0 "empty read as a digit": every synthetic misread is a wrong digit.
+  On the real photos there are 46 hallucinated cells (16 photos) and 76 missed cells (5 photos, 3 of them vision
+  failures). So "missed digit recovered" has **no example anywhere**: maxsat_weighted can never do it (an empty
+  reading adds no constraint, so keeping it is never more expensive), and maxsat_unique never needed to.
+- **maxsat_unique's 10 s limit is wall-clock time.** On one real photo (train/image209) the original run finished
+  its rounds in 7.4 s, while the re-run on the same machine took 11.3 s and would have timed out with a different
+  answer. The rounds themselves are deterministic, so the gallery re-runs such cases without the limit (and says
+  so). Results that depend on the time limit can change with machine load.
+
+Results: [gallery.md](../report/results/gallery.md), figures in `report/figures/gallery/`.
+
+## Interactive demo (`demo/app.py`)
+
+`pip install -e ".[ml,demo]"` then `streamlit run demo/app.py`. Upload a photo, or pick a test image (synthetic
+`test_final/clean` or a real v2 test photo) and add one noise type with a severity slider (same noise functions
+as the evaluation, seed 0). The page shows the detected grid, the CNN reads with a confidence heatmap,
+maxsat_weighted next to argmax_then_sat (overrides with their explanations, uniqueness, solve time) and, if ticked,
+maxsat_unique with a 10 s limit (on timeout it says so and shows the weighted answer). It calls only
+`pipeline.run` and `pipeline.visualize`; `run` gained an optional `solver_kwargs` (default None = unchanged) so the
+time limit can be passed. Test images are read as raw pixels, like `run_e2e.py`, so their ground truth applies
+(9 real photos have EXIF rotation tags that contradict the labels; `pipeline.run` would apply them to a raw file).
+Viva script with CLI fallback: [demo/DEMO_SCRIPT.md](../demo/DEMO_SCRIPT.md).
+
 ## Demo (`scripts/demo_reasoning.py`)
 
 ```

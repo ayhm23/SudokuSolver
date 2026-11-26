@@ -76,7 +76,7 @@ stores each image's ProbGrid and detected corners as `.npz`, so figures can be d
 | File | Main function(s) | Reads | Produces | Used by |
 |---|---|---|---|---|
 | `interfaces.py` | `validate_*`, `Override`, `SolveResult` | - | type contracts | everything |
-| `pipeline.py` | `run(image_path, perceiver, method)`, `perceive`, `make_method`, `visualize`, `OraclePerceiver`, CLI | image file | `PipelineOutput` (corners, cells, prob, result) | CLI, `run_e2e.py` |
+| `pipeline.py` | `run(image_path, perceiver, method, solver_kwargs=None)`, `perceive`, `make_method`, `visualize`, `OraclePerceiver`, CLI | image file | `PipelineOutput` (corners, cells, prob, result) | CLI, `run_e2e.py`, `demo/app.py` |
 | `vision/grid_detect.py` | `find_grid_corners`, `binarize`, `grid_score`, `refine_corners` | RGB image | 4 corners | pipeline, dataset, `eval_grid_detect.py` |
 | `vision/cell_extract.py` | `extract_cells`, `clean_cell`, `overlay`, `save_debug` | image + corners | CellImages | pipeline, perception/dataset |
 | `perception/dataset.py` | `build_split`, `crops_from_render`, `augment`, `torch_dataset` | renders (PNG + JSON) | `digits.npz` | `train.py` |
@@ -118,9 +118,11 @@ stores each image's ProbGrid and detected corners as `.npz`, so figures can be d
 | `analyse_cells.py` | `report/results/{confusions,noise_flips}.{csv,md}`, `report/figures/fig8_confusions` |
 | `unique_tail.py` | `report/results/unique_tail.{csv,md}` (slow maxsat_unique images, timeout what-if) |
 | `real_photos_report.py` | `report/results/real_photos.md` + `real_photos_*.csv`, `report/figures/real/`, `outputs/real_vis/` |
+| `make_gallery.py` | `report/results/gallery.md`, `report/figures/gallery/*.{png,pdf}` (real examples, re-run and checked against the CSVs) |
 | `make_report.py` | `report/results/*.csv`, `report/results/RESULTS.md`, `report/figures/fig*.{png,pdf}` |
 | `run_detached.ps1` | starts a long run that survives closing the terminal; log in `outputs/logs/<name>.log` |
 | `demo_reasoning.py` | stdout |
+| `streamlit run demo/app.py` | interactive page (upload or test image + noise; calls only `pipeline.run` / `visualize`) |
 | `python -m sudoku_ns.pipeline` | stdout + `<photo>_solved.png` |
 
 What each commit added: [progress.md](progress.md).

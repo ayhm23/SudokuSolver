@@ -49,3 +49,13 @@ def test_visualize_writes_png(renders, tmp_path):
     out = run(tmp_path / "img.png", OraclePerceiver(r.givens, seed=0, error_rate=0.2))
     visualize(r.image, out, tmp_path / "vis.png")
     assert (tmp_path / "vis.png").stat().st_size > 0
+
+
+def test_solver_kwargs_are_passed_through(renders, tmp_path):
+    r = renders[1]
+    save_render(r, tmp_path, "img")
+    oracle = OraclePerceiver(r.givens, seed=0)
+    out = run(tmp_path / "img.png", oracle, "maxsat_unique", solver_kwargs={"time_limit": 10})
+    assert out.result.status is SolveStatus.SOLVED and out.result.unique
+    with pytest.raises(ValueError):  # options are still rejected for baselines
+        run(tmp_path / "img.png", oracle, "argmax_then_sat", solver_kwargs={"time_limit": 10})
