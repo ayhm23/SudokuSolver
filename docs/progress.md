@@ -78,3 +78,29 @@ One PR per area, merged in this order (perception's dataset is cut with the new 
     failures → `SolveResult(ERROR, message="vision: ...")` instead of an exception, capture protocol
     `data/real/README.md` and `label_real.py`. test_clean: maxsat_unique 98.0%, maxsat_weighted 89.5%, unweighted 77.5%, argmax 74.5% solved.
     See [evaluation.md](evaluation.md#week-2-end-to-end-with-the-real-cnn-scriptsrun_e2epy).
+
+## Week 3
+
+15. **feat(eval): ablation knobs and final-sweep configs** (no behaviour change)
+    `encoding.weight / soft_clauses / build_wcnf` and `solver.solve` take `scale` / `eps` (defaults = `SCALE` /
+    `EPS`; a test checks the defaults give the identical formula and result). `run_e2e.py` configs take
+    `method_kwargs`, and a resumed run cuts off a half-written last CSV row. `tune_threshold.py` takes several val
+    dirs and refuses test dirs. `sweep_simulated.py` gets `--rates`, `--methods` (adds `maxsat_unweighted`),
+    `--config`, and a per-puzzle CSV. New sets from `scripts/render_final_sets.sh`: `test_final/` (TEST fonts, new
+    seed 40000, 100 images x 16 sets incl. clean) and `val_noise/` (VAL fonts, 50 x 15). Configs:
+    `configs/e2e_final_noise_cnn*.json`, `configs/ablations/`. `scripts/run_detached.ps1` = nohup for Windows.
+
+16. **feat(eval): report generator for the final results**
+    `scripts/make_report.py` turns the raw run CSVs into small summary CSVs (95% Wilson intervals, cell accuracy
+    before/after, corrections vs wrong overrides, UNSAT rate, median/p95 time, failure stage), the 7 figures
+    (PNG 300 dpi + PDF, one fixed style per method, readable in black and white) and `report/results/RESULTS.md`,
+    which contains tables only, generated from the CSVs so no number is typed by hand. `scripts/dump_cell_logits.py`
+    saves per-cell logits on the test sets for the reliability diagram. `run_detached.ps1` now logs every
+    command of an `&&` chain (before, cmd redirected only the last one).
+
+17. **results: Week 3 final sweep and ablations**
+    `report/results/` (summary CSVs + `RESULTS.md`, tables only) and `report/figures/` (7 figures, PNG + PDF),
+    all produced by `make_report.py` from the runs listed in `configs/README.md`. Main sweep: 1,600 test images x
+    5 methods; ablations: temperature off, SCALE 10-10000, EPS 1e-3-1e-9 (maxsat_weighted, same images), tau on
+    noisy VAL (0.5), simulated sweep (300 puzzles x 9 error rates). How to reproduce:
+    [evaluation.md](evaluation.md#week-3-final-sweep-and-ablations).

@@ -6,10 +6,16 @@ For error rate e, each given is misread with prob e, missed (read empty) with
 prob e/4, and each empty cell hallucinates a digit with prob e/20. Tying all
 three to one knob keeps the x-axis simple; the exact split is recorded in the
 CSV. Writes outputs/sweep_simulated.csv and outputs/sweep_simulated.png.
+
+Week 3 options: --rates and --methods pick the grid, --name the output file
+stem, and --config reads all of them from JSON (configs/ablations/). Besides
+the per-rate means, <name>_rows.csv keeps one row per puzzle x rate x method
+(needed for confidence intervals).
 """
 
 import argparse
 import csv
+import json
 from pathlib import Path
 
 import matplotlib
@@ -20,7 +26,11 @@ from tqdm import tqdm  # noqa: E402
 
 from sudoku_ns.eval.metrics import aggregate, evaluate  # noqa: E402
 from sudoku_ns.eval.simulate import simulate_prob_grid  # noqa: E402
-from sudoku_ns.reasoning.baselines import argmax_then_sat, threshold_then_sat  # noqa: E402
+from sudoku_ns.reasoning.baselines import (  # noqa: E402
+    argmax_then_sat,
+    threshold_then_sat,
+    unweighted_maxsat,
+)
 from sudoku_ns.reasoning.generator import generate  # noqa: E402
 from sudoku_ns.reasoning.solver import solve  # noqa: E402
 
@@ -32,19 +42,30 @@ STYLE = {
     "argmax": ("#eb6834", "s"),
     "threshold": ("#1baf7a", "^"),
     "maxsat_unique": ("#eda100", "D"),
+    "maxsat_unweighted": ("#8a5cc2", "v"),
 }
+METHODS = tuple(STYLE)
 
 
-def run_sweep(n: int, seed: int, tau: float) -> list[dict]:
+def run_sweep(
+    n: int,
+    seed: int,
+    tau: float,
+    rates: list[float] = ERROR_RATES,
+    methods_used: tuple[str, ...] = ("maxsat", "argmax", "threshold", "maxsat_unique"),
+    per_puzzle: list[dict] | None = None,
+) -> list[dict]:
     puzzles = [generate(seed + i) for i in tqdm(range(n), desc="generating")]
-    methods = {
+    all_methods = {
         "maxsat": lambda p: solve(p, check_unique=False),
         "argmax": lambda p: argmax_then_sat(p, check_unique=False),
         "threshold": lambda p: threshold_then_sat(p, tau, check_unique=False),
         "maxsat_unique": lambda p: solve(p, require_unique=True),
+        "maxsat_unweighted": lambda p: unweighted_maxsat(p, check_unique=False),
     }
+    methods = {m: all_methods[m] for m in methods_used}
     rows = []
-    for ei, e in enumerate(tqdm(ERROR_RATES, desc="error rates")):
+    for ei, e in enumerate(tqdm(rates, desc="error rates")):
         per_method = {m: [] for m in methods}
         for i, (givens, solution) in enumerate(puzzles):
             prob, _ = simulate_prob_grid(
@@ -55,7 +76,10 @@ def run_sweep(n: int, seed: int, tau: float) -> list[dict]:
                 seed=10_000 * (ei + 1) + seed + i,
             )
             for m, fn in methods.items():
-                per_method[m].append(evaluate(fn(prob), prob, givens, solution))
+                ev = evaluate(fn(prob), prob, givens, solution)
+                per_method[m].append(ev)
+                if per_puzzle is not None:
+                    per_puzzle.append({"method": m, "error_rate": e, "puzzle": seed + i} | ev)
         for m, results in per_method.items():
             rows.append(
                 {"method": m, "error_rate": e, "miss_rate": e / 4, "halluc_rate": e / 20}
@@ -65,7 +89,7 @@ def run_sweep(n: int, seed: int, tau: float) -> list[dict]:
 
 
 def read_csv(path: Path) -> list[dict]:
-    with path.open() as f:
+    with path.open(encoding="utf-8") as f:
         rows = list(csv.DictReader(f))
     return [{k: v if k == "method" else float(v) for k, v in row.items()} for row in rows]
 
@@ -76,6 +100,8 @@ def plot(rows: list[dict], path: Path, tau: float) -> None:
     for ax, (key, title) in zip(axes, panels, strict=True):
         for m, (color, marker) in STYLE.items():
             pts = [(r["error_rate"] * 100, r[key] * 100) for r in rows if r["method"] == m]
+            if not pts:
+                continue
             xs, ys = zip(*pts, strict=True)
             ax.plot(xs, ys, color=color, marker=marker, lw=2, ms=7, label=m)
         ax.set_title(title, loc="left", fontsize=11)
@@ -123,19 +149,41 @@ def main() -> None:
     ap.add_argument("--tau", type=float, default=0.8, help="threshold baseline cutoff")
     ap.add_argument("--out", type=Path, default=Path("outputs"))
     ap.add_argument("--from-csv", action="store_true", help="only redraw plot/table from the CSV")
+    ap.add_argument("--rates", type=str, default=None, help="comma list, e.g. 0,0.05,0.1")
+    ap.add_argument("--methods", type=str, default=None, help=f"comma list from {METHODS}")
+    ap.add_argument("--name", type=str, default="sweep_simulated", help="output file stem")
+    ap.add_argument("--config", type=Path, default=None, help="JSON with any of the above keys")
     args = ap.parse_args()
+    if args.config:
+        for k, v in json.loads(args.config.read_text("utf-8")).items():
+            if k == "out":
+                v = Path(v)
+            elif k in ("rates", "methods"):
+                v = ",".join(map(str, v))
+            setattr(args, k, v)
+    rates = [float(x) for x in args.rates.split(",")] if args.rates else ERROR_RATES
+    methods = (
+        tuple(args.methods.split(","))
+        if args.methods
+        else ("maxsat", "argmax", "threshold", "maxsat_unique")
+    )
+    if set(methods) - set(METHODS):
+        raise SystemExit(f"unknown methods {sorted(set(methods) - set(METHODS))}")
     args.out.mkdir(parents=True, exist_ok=True)
-    csv_path = args.out / "sweep_simulated.csv"
-    png_path = args.out / "sweep_simulated.png"
+    csv_path = args.out / f"{args.name}.csv"
+    rows_path = args.out / f"{args.name}_rows.csv"
+    png_path = args.out / f"{args.name}.png"
 
     if args.from_csv:
         rows = read_csv(csv_path)
     else:
-        rows = run_sweep(args.n, args.seed, args.tau)
-        with csv_path.open("w", newline="") as f:
-            w = csv.DictWriter(f, fieldnames=list(rows[0]))
-            w.writeheader()
-            w.writerows(rows)
+        per_puzzle: list[dict] = []
+        rows = run_sweep(args.n, args.seed, args.tau, rates, methods, per_puzzle)
+        for path, data in ((csv_path, rows), (rows_path, per_puzzle)):
+            with path.open("w", newline="", encoding="utf-8") as f:
+                w = csv.DictWriter(f, fieldnames=list(data[0]))
+                w.writeheader()
+                w.writerows(data)
     plot(rows, png_path, args.tau)
     print(f"wrote {csv_path} and {png_path}\n")
     print_table(rows)

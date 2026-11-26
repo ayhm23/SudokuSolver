@@ -61,6 +61,7 @@ All data goes to `data/` and all results to `outputs/` (both gitignored). In thi
 | grid detection | `python scripts/eval_grid_detect.py --renders data/synthetic/test_clean --n 50` | ~2 min |
 | encoding benchmark | `python scripts/bench_encoding.py --n 100` | ~3 min |
 | reasoning demo / Week 1 sweep | `python scripts/demo_reasoning.py --seed 0`, `python scripts/sweep_simulated.py --n 30` | 2 s / ~30 min |
+| Week 3 final sweep + ablations | see [docs/evaluation.md](docs/evaluation.md#week-3-final-sweep-and-ablations); results in [report/results/RESULTS.md](report/results/RESULTS.md) | ~1.5 h |
 | real photos | protocol in [data/real/README.md](data/real/README.md), label with `python scripts/label_real.py data/real/ --checkpoint ...` | |
 
 ## Repo map

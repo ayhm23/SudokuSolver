@@ -1,0 +1,3 @@
+setting,temperature,cells,accuracy_pct,mean_conf_pct,ece,nll
+T = 1 (no scaling),1.0,129519,98.6419,99.5207,0.0088,0.0438
+T = 1.1027 (fitted on val),1.1027,129519,98.6419,99.4604,0.0082,0.041

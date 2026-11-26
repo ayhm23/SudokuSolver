@@ -26,6 +26,8 @@ from sudoku_ns.interfaces import (
     validate_prob_grid,
 )
 from sudoku_ns.reasoning.encoding import (
+    EPS,
+    SCALE,
     build_wcnf,
     decode_model,
     decode_solution,
@@ -83,6 +85,8 @@ def solve(
     amo_encoding: str = "pairwise",
     shift: bool = True,
     require_unique: bool = False,
+    scale: float = SCALE,
+    eps: float = EPS,
 ) -> SolveResult:
     """Most probable consistent reading of the image, and its solution.
 
@@ -105,11 +109,14 @@ def solve(
     solve_time_s covers building the formula and the MaxSAT solve(s), plus the
     uniqueness checks only when require_unique=True (they are part of the
     method then), so it is comparable with the baselines.
+
+    scale / eps: the weight constants of encoding.py (defaults unchanged);
+    exposed only for the SCALE / EPS sensitivity ablation.
     """
     t0 = time.perf_counter()
     try:
         validate_prob_grid(prob)
-        wcnf = build_wcnf(prob, amo_encoding, shift)
+        wcnf = build_wcnf(prob, amo_encoding, shift, scale, eps)
     except ValueError as e:
         # Invalid ProbGrid (wrong shape, NaN, rows not summing to 1).
         return SolveResult(

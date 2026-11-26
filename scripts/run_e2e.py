@@ -15,6 +15,8 @@ Config (JSON) keys:
               or {"type": "oracle", "error_rate": 0.05, ...simulate_prob_grid kwargs}
   methods     subset of pipeline.METHODS
   tau         threshold for threshold_then_sat (choose it on VAL: scripts/tune_threshold.py)
+  method_kwargs  optional solver options per method, for ablations, e.g.
+              {"maxsat_weighted": {"scale": 100, "eps": 1e-9}} (see reasoning/encoding.py)
   noise       optional extra noise applied on load, e.g. {"blur": 0.5} (corners move with it)
   seed        base seed (oracle perceiver: seed + image index; noise: seed + image index)
   out         CSV path (default outputs/e2e/<name>.csv)
@@ -61,11 +63,21 @@ def load_config(path: Path) -> dict:
     cfg.setdefault("tau", 0.8)
     cfg.setdefault("noise", {})
     cfg.setdefault("seed", 0)
+    cfg.setdefault("method_kwargs", {})
     cfg.setdefault("out", f"outputs/e2e/{cfg['name']}.csv")
     unknown = set(cfg["methods"]) - set(METHODS)
     if unknown:
         raise ValueError(f"unknown methods {sorted(unknown)}")
     return cfg
+
+
+def drop_partial_last_line(path: Path) -> None:
+    """If a previous run was killed mid-write, the CSV can end in half a row.
+    Cut it off so resuming appends clean rows (that row is simply redone)."""
+    data = path.read_bytes()
+    if data and not data.endswith(b"\n"):
+        path.write_bytes(data[: data.rfind(b"\n") + 1])
+        print(f"resume: removed a partially written last row from {path}")
 
 
 def dataset_dirs(cfg: dict) -> list[Path]:
@@ -110,10 +122,13 @@ def main() -> None:
 
     done = set()
     if out.exists():
+        drop_partial_last_line(out)
         with out.open(encoding="utf-8") as f:
             done = {(r["dataset"], r["image"], r["method"]) for r in csv.DictReader(f)}
     new_file = not out.exists() or out.stat().st_size == 0
-    methods = {m: make_method(m, cfg["tau"]) for m in cfg["methods"]}
+    methods = {
+        m: make_method(m, cfg["tau"], **cfg["method_kwargs"].get(m, {})) for m in cfg["methods"]
+    }
     cache: dict = {}
 
     with out.open("a", newline="", encoding="utf-8") as f:

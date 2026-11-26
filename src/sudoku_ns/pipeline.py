@@ -42,11 +42,19 @@ Perceiver = Callable[[CellImages], ProbGrid]
 DEFAULT_TAU = 0.8  # threshold_then_sat; re-chosen on the val split for the CNN (tune_threshold.py)
 
 
-def make_method(name: str, tau: float = DEFAULT_TAU) -> Callable[[ProbGrid], SolveResult]:
-    """Reasoning method by name (the names used in configs and CSVs)."""
+def make_method(
+    name: str, tau: float = DEFAULT_TAU, **solver_kwargs
+) -> Callable[[ProbGrid], SolveResult]:
+    """Reasoning method by name (the names used in configs and CSVs).
+
+    solver_kwargs (e.g. scale=100, eps=1e-9) are passed to the weighted MaxSAT
+    solver; they exist for the ablations and are rejected for other methods.
+    """
+    if solver_kwargs and name not in ("maxsat_weighted", "maxsat_unique"):
+        raise ValueError(f"{name} takes no solver options, got {sorted(solver_kwargs)}")
     methods = {
-        "maxsat_weighted": solve,
-        "maxsat_unique": partial(solve, require_unique=True),
+        "maxsat_weighted": partial(solve, **solver_kwargs),
+        "maxsat_unique": partial(solve, require_unique=True, **solver_kwargs),
         "maxsat_unweighted": unweighted_maxsat,
         "argmax_then_sat": argmax_then_sat,
         "threshold_then_sat": partial(threshold_then_sat, tau=tau),

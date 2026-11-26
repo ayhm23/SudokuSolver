@@ -52,6 +52,8 @@ posteriori) estimate. Nothing in the code says "fix misreads"; it falls out of t
 
 Constants: `SCALE = 1000` because the solver needs integers; `EPS = 1e-6` so a probability of 0 does not become an
 unbreakable rule (cost is capped at ~13.8 nats).
+Both are also parameters (`solve(prob, scale=..., eps=...)`, defaults = these constants) only so the Week 3
+sensitivity ablation can vary them; `configs/ablations/scale_*.json`, `eps_*.json`.
 
 ## Worked example (test 2 in `test_reasoning.py`, real output)
 

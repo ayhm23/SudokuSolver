@@ -233,30 +233,42 @@ def sudoku_cnf(givens: np.ndarray | None = None) -> list:
 # ------------------------------------------------------------ soft clauses
 
 
-def weight(p: float) -> int:
-    """Integer cost of asserting a class the CNN gave probability p."""
-    return round(SCALE * -math.log(max(float(p), EPS)))
+def weight(p: float, scale: float = SCALE, eps: float = EPS) -> int:
+    """Integer cost of asserting a class the CNN gave probability p.
+
+    scale / eps default to the module constants; they are parameters only so
+    the Week 3 sensitivity ablation can vary them (configs/ablations/).
+    """
+    return round(scale * -math.log(max(float(p), eps)))
 
 
-def soft_clauses(prob: ProbGrid, shift: bool = True) -> Iterable[tuple[list[int], int]]:
+def soft_clauses(
+    prob: ProbGrid, shift: bool = True, scale: float = SCALE, eps: float = EPS
+) -> Iterable[tuple[list[int], int]]:
     """(clause, weight) pairs: NOT y(r,c,k) weighted by -log p(r,c,k), optionally shifted."""
     for r in range(9):
         for c in range(9):
-            ws = [weight(prob[r, c, k]) for k in range(10)]
+            ws = [weight(prob[r, c, k], scale, eps) for k in range(10)]
             base = min(ws) if shift else 0
             for k in range(10):
                 if ws[k] - base > 0:
                     yield [-y_var(r, c, k)], ws[k] - base
 
 
-def build_wcnf(prob: ProbGrid, amo_encoding: str = "pairwise", shift: bool = True) -> WCNF:
+def build_wcnf(
+    prob: ProbGrid,
+    amo_encoding: str = "pairwise",
+    shift: bool = True,
+    scale: float = SCALE,
+    eps: float = EPS,
+) -> WCNF:
     """Full weighted formula: hard Sudoku + reading clauses, soft CNN beliefs."""
     validate_prob_grid(prob)
     pool = _new_pool()
     wcnf = WCNF()
     for cl in sudoku_clauses(amo_encoding, pool) + reading_clauses(amo_encoding, pool):
         wcnf.append(cl)
-    for cl, w in soft_clauses(prob, shift):
+    for cl, w in soft_clauses(prob, shift, scale, eps):
         wcnf.append(cl, weight=w)
     return wcnf
 
