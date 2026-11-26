@@ -146,3 +146,8 @@ One PR per area, merged in this order (perception's dataset is cut with the new 
     `occ_disagree`), and optional `save_perception` writes each ProbGrid + detected corners to `.npz`. Tests:
     `test_import_wichtounet.py`, `test_run_e2e_without_corners_uses_occupancy_check`.
 
+
+24. **feat(eval): contact sheet for checking the imported labels by eye**
+    `scripts/real_label_sheet.py` draws the imported givens on 20 random photos (seed 0), placed with the
+    third-party outline, plus a plain-grid panel per photo, into `outputs/real_label_check/`. Draws only; never
+    edits a label.
