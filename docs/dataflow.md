@@ -56,10 +56,19 @@ the solver picks the most probable reading that is also a legal Sudoku. That is 
                                                         perception/calibrate.py (T on val) ─┘
 
  real photos: data/real/*.jpg ─► scripts/label_real.py ─► <photo>.json (same keys as a render)
+
+ public real photos (the real test set we report):
+   github wichtounet/sudoku_dataset ─► data/external/wichtounet/ (v2: 200 photos + .dat labels)
+       ─► scripts/import_wichtounet.py ─► data/real/wichtounet_v2_{train,test}/<photo>.jpg + .json
+          ("corners": null, so run_e2e.py judges vision from the reads, see below)
 ```
 
 Evaluation: `scripts/run_e2e.py --config configs/<name>.json` runs every image through vision → perceiver → each
-method and writes `outputs/e2e/<name>.csv`; `scripts/summarize_e2e.py` turns it into tables. Ablation configs
+method and writes `outputs/e2e/<name>.csv`; `scripts/summarize_e2e.py` turns it into tables. For images with
+ground-truth corners, "vision failed" means mean corner error >= 5 px. The public real photos have no verified
+corners, so there "vision failed" means the CNN's empty / has-a-digit pattern disagrees with the truth on >= 12
+cells (column `occ_disagree`; the reason for 12 is in the docstring of `run_e2e.py`). `save_perception: true` also
+stores each image's ProbGrid and detected corners as `.npz`, so figures can be drawn without re-running the CNN. Ablation configs
 (`configs/ablations/`) use the same script; `method_kwargs` passes solver options such as `scale` / `eps`.
 
 ## Who calls whom
@@ -98,11 +107,17 @@ method and writes `outputs/e2e/<name>.csv`; `scripts/summarize_e2e.py` turns it 
 | `run_e2e.py` | `outputs/e2e/<config name>.csv` |
 | `summarize_e2e.py` | stdout tables (or markdown) |
 | `label_real.py` | `data/real/<photo>.json` |
+| `import_wichtounet.py` | `data/real/wichtounet_v2_{train,test}/` (public photos + JSON labels) |
+| `real_label_sheet.py` | `outputs/real_label_check/` (contact sheet to check the imported labels by eye) |
 | `eval_grid_detect.py` | stdout table, `outputs/vision_failures/{grid_detect.csv,<noise>/*.png}` |
 | `bench_encoding.py` | `outputs/bench_encoding.csv` |
 | `sweep_simulated.py` | `outputs/<name>.{csv,png}` + `<name>_rows.csv` (one row per puzzle); `--config` JSON |
 | `render_final_sets.sh` | `data/synthetic/{test_final,val_noise}/<type>_<s>/` (Week 3 sweep and tau tuning sets) |
 | `dump_cell_logits.py` | `outputs/e2e/cell_logits_<set>.npz` (per-cell logits + true class, for calibration) |
+| `check_unweighted.py` | `report/results/unweighted_check.md` (cell-level check of maxsat_unweighted) |
+| `analyse_cells.py` | `report/results/{confusions,noise_flips}.{csv,md}`, `report/figures/fig8_confusions` |
+| `unique_tail.py` | `report/results/unique_tail.{csv,md}` (slow maxsat_unique images, timeout what-if) |
+| `real_photos_report.py` | `report/results/real_photos.md` + `real_photos_*.csv`, `report/figures/real/`, `outputs/real_vis/` |
 | `make_report.py` | `report/results/*.csv`, `report/results/RESULTS.md`, `report/figures/fig*.{png,pdf}` |
 | `run_detached.ps1` | starts a long run that survives closing the terminal; log in `outputs/logs/<name>.log` |
 | `demo_reasoning.py` | stdout |

@@ -263,7 +263,67 @@ def e2e_tables(rows: list[dict]):
             rs = [r for (mm, s), v in by.items() if mm == m and pred(*parse_set(s)) for r in v]
             if rs:
                 pooled.append({"method": m, "group": g, **summarise(rs)})
-    return methods, by_set, pooled
+    return methods, by_set, pooled, groups
+
+
+BOOT_B, BOOT_SEED = 10_000, 0
+
+
+def cluster_bootstrap(rows, methods, groups, diff=("maxsat_weighted", "argmax_then_sat")):
+    """Percentile 95% CIs that respect the paired design: resample PUZZLES (the image index,
+    shared by all 16 sets) with replacement, keeping all of a puzzle's rows in the group's sets
+    together. The same resampled puzzle sets are used for every method, so the paired
+    difference diff[0] - diff[1] is computed on identical puzzles in each resample."""
+    puzzles = sorted({r["image"] for r in rows})
+    pidx = {p: i for i, p in enumerate(puzzles)}
+    rng = np.random.default_rng(BOOT_SEED)
+    draws = rng.integers(0, len(puzzles), size=(BOOT_B, len(puzzles)))
+    out, diffs = [], []
+    for g, pred in groups:
+        stats = {}
+        for m in methods:
+            k = np.zeros(len(puzzles))  # solved count per puzzle, summed over the group's sets
+            n = np.zeros(len(puzzles))  # rows per puzzle in the group
+            for r in rows:
+                if r["method"] == m and pred(*parse_set(r["dataset"])):
+                    k[pidx[r["image"]]] += r["correct"] == "True"
+                    n[pidx[r["image"]]] += 1
+            if not n.sum():
+                continue
+            boot = 100 * k[draws].sum(1) / n[draws].sum(1)
+            point = 100 * k.sum() / n.sum()
+            stats[m] = boot
+            lo, hi = np.percentile(boot, [2.5, 97.5])
+            w_lo, w_hi = wilson(int(k.sum()), int(n.sum()))
+            out.append(
+                {
+                    "method": m,
+                    "group": g,
+                    "n_rows": int(n.sum()),
+                    "n_puzzles": int((n > 0).sum()),
+                    "solve_pct": point,
+                    "wilson_lo_pct": 100 * w_lo,
+                    "wilson_hi_pct": 100 * w_hi,
+                    "boot_lo_pct": lo,
+                    "boot_hi_pct": hi,
+                }
+            )
+        if all(m in stats for m in diff):
+            d = stats[diff[0]] - stats[diff[1]]
+            pa = next(r["solve_pct"] for r in out if r["method"] == diff[0] and r["group"] == g)
+            pb = next(r["solve_pct"] for r in out if r["method"] == diff[1] and r["group"] == g)
+            lo, hi = np.percentile(d, [2.5, 97.5])
+            diffs.append(
+                {
+                    "group": g,
+                    "difference": f"{diff[0]} - {diff[1]}",
+                    "diff_pct_points": pa - pb,
+                    "boot_lo": lo,
+                    "boot_hi": hi,
+                    "resamples_with_diff_le_0": int((d <= 0).sum()),
+                }
+            )
+    return out, diffs
 
 
 def fig_headline(by_set, methods):
@@ -759,7 +819,9 @@ def main() -> None:
         "",
         "Conventions: *solved %* = full grid equal to the true solution. 95% CI = Wilson score "
         "interval. Pooled rows treat images as independent, but the 16 test_final sets reuse the "
-        "same 100 puzzles (paired design), so pooled intervals are optimistic. *cell acc* = mean "
+        "same 100 puzzles (paired design), so pooled Wilson intervals are optimistic; "
+        "sections 1d-1e add "
+        "cluster-bootstrap intervals over puzzles. *cell acc* = mean "
         "over all 81 cells of images where vision worked, before (CNN argmax) and after (the "
         "method's reading). *corrected* = misread before and right after; *correct overridden* = "
         "right before, wrong after. Times are per image, reasoning only (`solve_time_s`). "
@@ -774,9 +836,12 @@ def main() -> None:
 
     main_rows = read_rows(MAIN) + read_rows(UNIQUE)
     if main_rows:
-        methods, by_set, pooled = e2e_tables(main_rows)
+        methods, by_set, pooled, groups = e2e_tables(main_rows)
         write_csv(RES / "e2e_by_set.csv", by_set)
         write_csv(RES / "e2e_pooled.csv", pooled)
+        boot, boot_diff = cluster_bootstrap(main_rows, methods, groups)
+        write_csv(RES / "e2e_pooled_bootstrap.csv", boot)
+        write_csv(RES / "e2e_paired_diff_bootstrap.csv", boot_diff)
         src = f"Configs: `{CFG_MAIN}`" + (f", `{CFG_UNIQUE}`" if UNIQUE.exists() else "")
         md += ["## 1. Main sweep", "", src + ".", ""]
         md += ["### 1a. Headline: all 16 sets pooled, clean, all noisy (`e2e_pooled.csv`)", ""]
@@ -794,6 +859,51 @@ def main() -> None:
                     ("noise", "noise", 0),
                     ("severity", "severity", 2),
                     *CORE_COLS,
+                ],
+            ),
+            "",
+        ]
+        md += [
+            "### 1d. Pooled solve rate: Wilson vs cluster-bootstrap intervals "
+            "(`e2e_pooled_bootstrap.csv`)",
+            "",
+            "Two different 95% intervals for the same pooled solve rate. *Wilson* (as in 1a/1b) "
+            "treats every row as an independent image. *Cluster bootstrap* resamples the "
+            f"{len({r['image'] for r in main_rows})} puzzles with replacement ({BOOT_B:,} "
+            f"resamples, seed {BOOT_SEED}, percentile interval), keeping all of a puzzle's rows in "
+            "the group's sets together, so it accounts for the 16 sets sharing the same puzzles. "
+            "For `clean` the two answer the same question (one row per puzzle).",
+            "",
+            md_table(
+                boot,
+                [
+                    ("method", "method", 0),
+                    ("group", "set", 0),
+                    ("n_rows", "rows", 0),
+                    ("n_puzzles", "puzzles", 0),
+                    ("solve_pct", "solved %", 1),
+                    ("wilson_lo_pct", "Wilson lo", 1),
+                    ("wilson_hi_pct", "Wilson hi", 1),
+                    ("boot_lo_pct", "bootstrap lo", 1),
+                    ("boot_hi_pct", "bootstrap hi", 1),
+                ],
+            ),
+            "",
+            "### 1e. Paired difference maxsat_weighted - argmax_then_sat "
+            "(`e2e_paired_diff_bootstrap.csv`)",
+            "",
+            "Difference in solve rate (percentage points) on the same images; 95% interval from "
+            "the same puzzle-cluster bootstrap (both methods evaluated on identical resampled "
+            f"puzzles). Last column: how many of the {BOOT_B:,} resamples gave a difference <= 0.",
+            "",
+            md_table(
+                boot_diff,
+                [
+                    ("group", "set", 0),
+                    ("diff_pct_points", "difference (pp)", 1),
+                    ("boot_lo", "bootstrap lo", 1),
+                    ("boot_hi", "bootstrap hi", 1),
+                    ("resamples_with_diff_le_0", "resamples <= 0", 0),
                 ],
             ),
             "",

@@ -87,6 +87,7 @@ def solve(
     require_unique: bool = False,
     scale: float = SCALE,
     eps: float = EPS,
+    time_limit: float | None = None,
 ) -> SolveResult:
     """Most probable consistent reading of the image, and its solution.
 
@@ -112,6 +113,12 @@ def solve(
 
     scale / eps: the weight constants of encoding.py (defaults unchanged);
     exposed only for the SCALE / EPS sensitivity ablation.
+
+    time_limit (seconds, require_unique only): if the uniqueness rounds are
+    still running after this long, stop and return the FIRST-round reading,
+    which is exactly the maxsat_weighted answer, with a "timeout: ..." message.
+    The clock is checked between rounds, so a round that has started always
+    finishes: the real time can exceed the limit by one round.
     """
     t0 = time.perf_counter()
     try:
@@ -124,7 +131,9 @@ def solve(
         )
 
     unique = None
-    for _ in range(MAX_UNIQUE_ROUNDS if require_unique else 1):
+    first = None  # (model, cost, solution, read_givens, unique) of round 1
+    message = None
+    for round_no in range(1, (MAX_UNIQUE_ROUNDS if require_unique else 1) + 1):
         # A fresh solver per round: pysat's RC2Stratified returned "no model"
         # after hard clauses were added between compute() calls (seen on 12 of
         # 30 puzzles; plain RC2 handled it but is ~100x slower on noisy grids).
@@ -138,7 +147,16 @@ def solve(
         if not require_unique:
             break
         unique = is_unique(read_givens)
+        if first is None:
+            first = (model, cost, solution, read_givens, unique)
         if unique:
+            break
+        if time_limit is not None and time.perf_counter() - t0 > time_limit:
+            model, cost, solution, read_givens, unique = first
+            message = (
+                f"timeout: no unique reading after {round_no} rounds / {time_limit:g} s; "
+                "returned the first-round (maxsat_weighted) reading"
+            )
             break
         wcnf.append(_block_reading(read_givens))
     elapsed = time.perf_counter() - t0
@@ -161,4 +179,5 @@ def solve(
         unique=unique,
         cost=int(cost),
         solve_time_s=elapsed,
+        message=message,
     )

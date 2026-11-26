@@ -104,3 +104,63 @@ One PR per area, merged in this order (perception's dataset is cut with the new 
     5 methods; ablations: temperature off, SCALE 10-10000, EPS 1e-3-1e-9 (maxsat_weighted, same images), tau on
     noisy VAL (0.5), simulated sweep (300 puzzles x 9 error rates). How to reproduce:
     [evaluation.md](evaluation.md#week-3-final-sweep-and-ablations).
+
+18. **analysis: why unweighted MaxSAT fixes 0 misreads** (read-only, no method or metric change)
+    `scripts/check_unweighted.py` re-runs `unweighted_maxsat` on the probabilities rebuilt from the PR #9 logit
+    dump, reproduces every CSV row, and shows the 0 is forced by construction: the method can only keep or blank a
+    CNN digit, and every misread in test_final is a digit substitution. Report: `report/results/unweighted_check.md`.
+
+19. **analysis: CNN confusion pairs and noisy-vs-clean cell flips** (read-only)
+    `scripts/analyse_cells.py` (from the PR #9 logit dump): top (true -> read) pairs overall, per noise type and per
+    font (`report/results/confusions.md`, figure `fig8_confusions`), and per noise set the cells that flip relative
+    to the clean render of the same puzzle, with the Space Mono "5" cells broken out (`noise_flips.md`).
+
+20. **results: cluster-bootstrap intervals for pooled solve rates**
+    The 16 test_final sets share the same 100 puzzles, so pooled Wilson intervals are too narrow. `make_report.py`
+    now also resamples puzzles (10,000 resamples, seed 0) and reports both intervals side by side, plus the paired
+    difference maxsat_weighted - argmax_then_sat on identical resamples (RESULTS.md sections 1d-1e,
+    `e2e_pooled_bootstrap.csv`, `e2e_paired_diff_bootstrap.csv`). Existing tables are unchanged.
+
+21. **analysis: maxsat_unique runtime tail and a timeout what-if** (report only, default unchanged)
+    `scripts/unique_tail.py` re-solves the images whose recorded maxsat_unique time is over 10 s to recover their
+    cost and solver-call counts (counted by wrapping the solver classes from the script), and checks against the
+    recorded data what a T-second timeout with fallback to the maxsat_weighted answer would change.
+    `report/results/unique_tail.md`.
+
+## Week 4: real photos (public dataset)
+
+22. **feat(reasoning): optional time limit for maxsat_unique**
+    `solve(..., require_unique=True, time_limit=T)` stops the uniqueness rounds after T seconds and returns the
+    first-round reading (= the maxsat_weighted answer), flagged with a `timeout:` message. Set per run with
+    `method_kwargs: {"maxsat_unique": {"time_limit": 10}}`. Off by default. Test:
+    `test_require_unique_time_limit_falls_back_to_first_round`. See [reasoning.md](reasoning.md).
+
+23. **feat(eval): import the public real-photo dataset; vision check without corners**
+    `scripts/import_wichtounet.py` turns the 200 v2 photos of github.com/wichtounet/sudoku_dataset into our
+    real-photo JSON format (original split, phone, declared and actual resolution, `puzzle_id`, SAT solution;
+    unsolvable or ambiguous labels would be flagged, none were). Findings recorded in `data/real/README.md`: only 76
+    distinct puzzles, 44 photos smaller than their `.dat` says, 9 EXIF tags that contradict the labels, a
+    third-party outline file stored for cross-checking only. `load_render` accepts `"corners": null`.
+    `run_e2e.py`: for such images "vision failed" = grid not found, or >= 12 cells where the CNN's empty / digit
+    decision disagrees with the truth (threshold fixed from synthetic test_final, before any real run; new column
+    `occ_disagree`), and optional `save_perception` writes each ProbGrid + detected corners to `.npz`. Tests:
+    `test_import_wichtounet.py`, `test_run_e2e_without_corners_uses_occupancy_check`.
+
+
+24. **feat(eval): contact sheet for checking the imported labels by eye**
+    `scripts/real_label_sheet.py` draws the imported givens on 20 random photos (seed 0), placed with the
+    third-party outline, plus a plain-grid panel per photo, into `outputs/real_label_check/`. Draws only; never
+    edits a label.
+
+25. **feat(eval): real-photo run config and report script**
+    `configs/e2e_real_wichtounet_cnn.json` (all 5 methods, tau 0.5, maxsat_unique time limit 10 s, ProbGrids saved)
+    and `scripts/real_photos_report.py`: per-method tables with Wilson and puzzle-bootstrap intervals, cell accuracy
+    before/after, vision check details with a cross-check against the third-party outlines, synthetic vs real,
+    resolution / phone breakdowns, confusion pairs, one figure per photo and 6 figures picked by fixed rules. It
+    re-solves maxsat_weighted from the saved ProbGrids and checks that every result matches the run CSV. How to
+    run: [evaluation.md](evaluation.md#week-4-real-photos-public-dataset).
+
+26. **results: real photos (public wichtounet v2, 200 photos)**
+    `report/results/real_photos.md` (+ `real_photos_*.csv`) and `report/figures/real/` (6 per-photo figures), all
+    generated by `real_photos_report.py` from the run of `configs/e2e_real_wichtounet_cnn.json`. Facts only; nothing
+    was tuned on these photos.

@@ -29,3 +29,11 @@ Test images: `data/synthetic/test_final/` (TEST fonts, seed 40000, never used be
 
 tau for threshold_then_sat: `python scripts/tune_threshold.py --checkpoint outputs/models/cnn_v1/model.pt
 --renders "data/synthetic/val_noise/*" --out outputs/tune_threshold_val_noise.json` (VAL only) chose 0.5.
+
+## Week 4 real photos
+
+| Config | What it measures |
+|---|---|
+| `e2e_real_wichtounet_cnn.json` | all 5 methods on the 200 public real photos (`data/real/wichtounet_v2_{train,test}`, imported by `scripts/import_wichtounet.py`); maxsat_unique with a 10 s time limit; saves each ProbGrid for `scripts/real_photos_report.py` |
+
+Same CNN, tau and solver settings as the Week 3 sweep; nothing is chosen on these photos.

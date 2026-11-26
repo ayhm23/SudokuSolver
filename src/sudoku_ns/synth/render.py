@@ -155,12 +155,20 @@ def save_render(r: Render, out_dir: Path, stem: str, extra: dict | None = None) 
 
 
 def load_render(json_path: Path) -> Render:
-    meta = json.loads(Path(json_path).read_text())
+    """Load a render or a labelled real photo.
+
+    Real photos without verified corners ("corners": null, e.g. the imported
+    public dataset) get NaN corners; run_e2e.py then judges vision from the
+    reads. Raw pixels are used (EXIF orientation is NOT applied): for the
+    imported dataset the labels follow the raw pixels (import_wichtounet.py).
+    """
+    meta = json.loads(Path(json_path).read_text(encoding="utf-8"))
     image = np.asarray(Image.open(Path(json_path).parent / meta["image"]).convert("RGB"))
+    corners = meta["corners"]
     return Render(
         image,
         np.array(meta["givens"], np.int8),
         np.array(meta["solution"], np.int8),
-        np.array(meta["corners"], np.float32),
+        np.full((4, 2), np.nan, np.float32) if corners is None else np.array(corners, np.float32),
         meta["font"],
     )

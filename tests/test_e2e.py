@@ -66,3 +66,34 @@ def test_run_e2e_resume_drops_partial_last_row(renders, tmp_path):
         ("00000", "maxsat_weighted"),
         ("00001", "maxsat_weighted"),
     ]
+
+
+def test_run_e2e_without_corners_uses_occupancy_check(renders, tmp_path):
+    # A real photo from the public dataset has "corners": null. Vision is then
+    # judged by the empty / digit pattern of the reads (column occ_disagree).
+    for i, r in enumerate(renders[:2]):
+        save_render(r, tmp_path / "ds", f"{i:05d}")
+        jp = tmp_path / "ds" / f"{i:05d}.json"
+        meta = json.loads(jp.read_text(encoding="utf-8"))
+        meta["corners"] = None
+        jp.write_text(json.dumps(meta), encoding="utf-8")
+    out = tmp_path / "e2e.csv"
+    cfg = {
+        "datasets": [str(tmp_path / "ds")],
+        "perceiver": {"type": "oracle", "error_rate": 0.0},
+        "methods": ["maxsat_weighted"],
+        "save_perception": True,
+        "out": str(out),
+    }
+    (tmp_path / "c.json").write_text(json.dumps(cfg), encoding="utf-8")
+    _run("run_e2e.py", "--config", tmp_path / "c.json")
+    with out.open(encoding="utf-8") as f:
+        rows = list(csv.DictReader(f))
+    assert len(rows) == 2
+    for r in rows:
+        assert r["corner_err"] == "nan" and r["occ_disagree"] == "0"
+        assert r["failure_stage"] != "vision"
+    import numpy as np
+
+    d = np.load(tmp_path / "e2e_perception" / "ds" / "00000.npz")
+    assert d["prob"].shape == (9, 9, 10) and d["corners"].shape == (4, 2)

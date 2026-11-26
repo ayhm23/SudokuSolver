@@ -219,6 +219,28 @@ def test_require_unique_recovers_essential_missed_digit(puzzle):
     np.testing.assert_array_equal(res.solution, solution)
 
 
+def test_require_unique_time_limit_falls_back_to_first_round(puzzle):
+    # Same ambiguous case as above; time_limit=0 stops after round 1, so the
+    # answer must be exactly the plain (maxsat_weighted) one, flagged as a timeout.
+    givens, _ = puzzle
+    redundant = set(redundant_givens(givens))
+    r, c = next(
+        (int(r), int(c))
+        for r, c in zip(*np.nonzero(givens), strict=True)
+        if (r, c) not in redundant
+    )
+    p = one_hot(givens)
+    set_cell(p, r, c, {0: 0.55, int(givens[r, c]): 0.35})
+
+    plain = solve(p)
+    res = solve(p, require_unique=True, time_limit=0.0)
+    assert res.message.startswith("timeout:")
+    np.testing.assert_array_equal(res.read_givens, plain.read_givens)
+    np.testing.assert_array_equal(res.solution, plain.solution)
+    assert res.cost == plain.cost and res.unique is False
+    assert solve(p, require_unique=True, time_limit=60).message is None
+
+
 def misread_case(givens):
     """Week 1 hand-written case: a given read as a digit that repeats in its row."""
     r, c, cc, w = next(
