@@ -135,3 +135,14 @@ One PR per area, merged in this order (perception's dataset is cut with the new 
     `method_kwargs: {"maxsat_unique": {"time_limit": 10}}`. Off by default. Test:
     `test_require_unique_time_limit_falls_back_to_first_round`. See [reasoning.md](reasoning.md).
 
+23. **feat(eval): import the public real-photo dataset; vision check without corners**
+    `scripts/import_wichtounet.py` turns the 200 v2 photos of github.com/wichtounet/sudoku_dataset into our
+    real-photo JSON format (original split, phone, declared and actual resolution, `puzzle_id`, SAT solution;
+    unsolvable or ambiguous labels would be flagged, none were). Findings recorded in `data/real/README.md`: only 76
+    distinct puzzles, 44 photos smaller than their `.dat` says, 9 EXIF tags that contradict the labels, a
+    third-party outline file stored for cross-checking only. `load_render` accepts `"corners": null`.
+    `run_e2e.py`: for such images "vision failed" = grid not found, or >= 12 cells where the CNN's empty / digit
+    decision disagrees with the truth (threshold fixed from synthetic test_final, before any real run; new column
+    `occ_disagree`), and optional `save_perception` writes each ProbGrid + detected corners to `.npz`. Tests:
+    `test_import_wichtounet.py`, `test_run_e2e_without_corners_uses_occupancy_check`.
+

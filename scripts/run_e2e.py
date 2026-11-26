@@ -20,15 +20,31 @@ Config (JSON) keys:
   noise       optional extra noise applied on load, e.g. {"blur": 0.5} (corners move with it)
   seed        base seed (oracle perceiver: seed + image index; noise: seed + image index)
   out         CSV path (default outputs/e2e/<name>.csv)
+  occupancy_tol  vision check for images WITHOUT ground-truth corners (default 12, see below)
+  save_perception  if true, also write outputs/e2e/<name>_perception/<dataset>/<image>.npz
+              with the ProbGrid ("prob") and detected corners ("corners", NaN if not found),
+              for later analysis and figures without re-running the CNN
 
 failure_stage is the FIRST stage that went wrong, for rows that are not
 solved correctly:
-  vision      grid not found, or mean corner error >= 5 px
+  vision      grid not found, or mean corner error >= 5 px; for images without
+              ground-truth corners (real photos from the public dataset):
+              grid not found, or the CNN's empty / has-a-digit pattern disagrees
+              with the ground truth on >= occupancy_tol cells (column occ_disagree)
   perception  vision fine, but the CNN argmax misread at least one cell
               (and this method did not manage to repair it)
   reasoning   vision and the CNN argmax were both entirely right, and the
               method still failed (e.g. it overrode a correct reading, or the
               reading was ambiguous)
+
+Why occupancy_tol = 12 (fixed from synthetic data before any real photo was
+run): on test_final, every one of the 1598 images with corner error < 5 px had
+0 cells where the CNN's empty / digit decision disagreed with the truth (digit
+identities could still be misread, up to 12 cells), while the empty / digit
+patterns of two DIFFERENT puzzles disagree on 24-81 cells (median 38). A grid
+on the wrong puzzle, shifted by a cell or cropped therefore lands far above 0;
+12 is the midpoint between 0 and 24. A wrong digit identity on the right cell
+does not count, so heavy misreading alone is not called a vision failure.
 """
 
 import argparse
@@ -49,10 +65,11 @@ from sudoku_ns.synth.render import load_render
 from sudoku_ns.vision.grid_detect import GridNotFoundError
 
 CORNER_TOL = 5.0
+OCCUPANCY_TOL = 12
 FIELDS = [
     "dataset", "image", "method", "status", "correct", "failure_stage", "cell_acc_before",
     "cell_acc_after", "n_misreads", "misreads_corrected", "correct_overridden", "unique",
-    "solve_time_s", "perceive_time_s", "corner_err", "noise", "message",
+    "solve_time_s", "perceive_time_s", "corner_err", "noise", "message", "occ_disagree",
 ]  # fmt: skip
 
 
@@ -64,6 +81,8 @@ def load_config(path: Path) -> dict:
     cfg.setdefault("noise", {})
     cfg.setdefault("seed", 0)
     cfg.setdefault("method_kwargs", {})
+    cfg.setdefault("occupancy_tol", OCCUPANCY_TOL)
+    cfg.setdefault("save_perception", False)
     cfg.setdefault("out", f"outputs/e2e/{cfg['name']}.csv")
     unknown = set(cfg["methods"]) - set(METHODS)
     if unknown:
@@ -124,7 +143,11 @@ def main() -> None:
     if out.exists():
         drop_partial_last_line(out)
         with out.open(encoding="utf-8") as f:
-            done = {(r["dataset"], r["image"], r["method"]) for r in csv.DictReader(f)}
+            reader = csv.DictReader(f)
+            done = {(r["dataset"], r["image"], r["method"]) for r in reader}
+            if reader.fieldnames and reader.fieldnames != FIELDS:
+                raise SystemExit(f"{out} has old columns; write to a new 'out' instead of resuming")
+    pdir = out.with_name(f"{out.stem}_perception")
     new_file = not out.exists() or out.stat().st_size == 0
     methods = {
         m: make_method(m, cfg["tau"], **cfg["method_kwargs"].get(m, {})) for m in cfg["methods"]
@@ -157,7 +180,22 @@ def main() -> None:
                 except GridNotFoundError as e:
                     prob, corner_err, vision_msg = None, float("nan"), f"vision: {e}"
                 t_perceive = time.perf_counter() - t0
-                vision_ok = prob is not None and corner_err < CORNER_TOL
+                occ = (
+                    int(((prob.argmax(2) == 0) != (r.givens == 0)).sum())
+                    if prob is not None
+                    else -1
+                )
+                if np.isnan(gt).all():  # no ground-truth corners: judge vision by the reads
+                    vision_ok = prob is not None and occ < cfg["occupancy_tol"]
+                else:
+                    vision_ok = prob is not None and corner_err < CORNER_TOL
+                if cfg["save_perception"]:
+                    (pdir / d.name).mkdir(parents=True, exist_ok=True)
+                    np.savez_compressed(
+                        pdir / d.name / f"{jp.stem}.npz",
+                        prob=prob if prob is not None else np.full((9, 9, 10), np.nan),
+                        corners=corners if prob is not None else np.full((4, 2), np.nan),
+                    )
                 argmax_ok = prob is not None and bool(np.array_equal(prob.argmax(2), r.givens))
                 for m in todo:
                     if prob is None:
@@ -182,6 +220,7 @@ def main() -> None:
                         "corner_err": round(corner_err, 3),
                         "noise": noise,
                         "message": res.message or "",
+                        "occ_disagree": occ if prob is not None else "",
                     }
                     writer.writerow(row)
                 f.flush()
