@@ -104,3 +104,25 @@ One PR per area, merged in this order (perception's dataset is cut with the new 
     5 methods; ablations: temperature off, SCALE 10-10000, EPS 1e-3-1e-9 (maxsat_weighted, same images), tau on
     noisy VAL (0.5), simulated sweep (300 puzzles x 9 error rates). How to reproduce:
     [evaluation.md](evaluation.md#week-3-final-sweep-and-ablations).
+
+18. **analysis: why unweighted MaxSAT fixes 0 misreads** (read-only, no method or metric change)
+    `scripts/check_unweighted.py` re-runs `unweighted_maxsat` on the probabilities rebuilt from the PR #9 logit
+    dump, reproduces every CSV row, and shows the 0 is forced by construction: the method can only keep or blank a
+    CNN digit, and every misread in test_final is a digit substitution. Report: `report/results/unweighted_check.md`.
+
+19. **analysis: CNN confusion pairs and noisy-vs-clean cell flips** (read-only)
+    `scripts/analyse_cells.py` (from the PR #9 logit dump): top (true -> read) pairs overall, per noise type and per
+    font (`report/results/confusions.md`, figure `fig8_confusions`), and per noise set the cells that flip relative
+    to the clean render of the same puzzle, with the Space Mono "5" cells broken out (`noise_flips.md`).
+
+20. **results: cluster-bootstrap intervals for pooled solve rates**
+    The 16 test_final sets share the same 100 puzzles, so pooled Wilson intervals are too narrow. `make_report.py`
+    now also resamples puzzles (10,000 resamples, seed 0) and reports both intervals side by side, plus the paired
+    difference maxsat_weighted - argmax_then_sat on identical resamples (RESULTS.md sections 1d-1e,
+    `e2e_pooled_bootstrap.csv`, `e2e_paired_diff_bootstrap.csv`). Existing tables are unchanged.
+
+21. **analysis: maxsat_unique runtime tail and a timeout what-if** (report only, default unchanged)
+    `scripts/unique_tail.py` re-solves the images whose recorded maxsat_unique time is over 10 s to recover their
+    cost and solver-call counts (counted by wrapping the solver classes from the script), and checks against the
+    recorded data what a T-second timeout with fallback to the maxsat_weighted answer would change.
+    `report/results/unique_tail.md`.
