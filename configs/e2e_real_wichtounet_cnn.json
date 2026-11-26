@@ -1,0 +1,10 @@
+{
+  "name": "e2e_real_wichtounet_cnn",
+  "datasets": ["data/real/wichtounet_v2_train", "data/real/wichtounet_v2_test"],
+  "perceiver": {"type": "cnn", "checkpoint": "outputs/models/cnn_v1/model.pt", "use_temperature": true},
+  "methods": ["maxsat_weighted", "maxsat_unweighted", "argmax_then_sat", "threshold_then_sat", "maxsat_unique"],
+  "method_kwargs": {"maxsat_unique": {"time_limit": 10}},
+  "tau": 0.5,
+  "seed": 0,
+  "save_perception": true
+}

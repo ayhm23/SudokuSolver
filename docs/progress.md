@@ -151,3 +151,11 @@ One PR per area, merged in this order (perception's dataset is cut with the new 
     `scripts/real_label_sheet.py` draws the imported givens on 20 random photos (seed 0), placed with the
     third-party outline, plus a plain-grid panel per photo, into `outputs/real_label_check/`. Draws only; never
     edits a label.
+
+25. **feat(eval): real-photo run config and report script**
+    `configs/e2e_real_wichtounet_cnn.json` (all 5 methods, tau 0.5, maxsat_unique time limit 10 s, ProbGrids saved)
+    and `scripts/real_photos_report.py`: per-method tables with Wilson and puzzle-bootstrap intervals, cell accuracy
+    before/after, vision check details with a cross-check against the third-party outlines, synthetic vs real,
+    resolution / phone breakdowns, confusion pairs, one figure per photo and 6 figures picked by fixed rules. It
+    re-solves maxsat_weighted from the saved ProbGrids and checks that every result matches the run CSV. How to
+    run: [evaluation.md](evaluation.md#week-4-real-photos-public-dataset).

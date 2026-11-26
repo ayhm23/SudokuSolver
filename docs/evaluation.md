@@ -270,6 +270,36 @@ No new runs of the methods; everything is computed from the existing outputs (an
 | Pooled intervals that respect the shared puzzles | `make_report.py` | [RESULTS.md](../report/results/RESULTS.md) sections 1d-1e |
 | maxsat_unique slow images, timeout what-if | `unique_tail.py` | [unique_tail.md](../report/results/unique_tail.md) |
 
+## Week 4: real photos (public dataset)
+
+The real test set is the public wichtounet v2 dataset: 200 phone photos of newspaper Sudokus (source, licence,
+citation and what the import found: [data/real/README.md](../data/real/README.md)). Nothing was tuned on it: the
+same CNN (`cnn_v1`, temperature on), tau = 0.5 from noisy VAL, and the default solver settings, plus a 10 s time
+limit for maxsat_unique (on timeout it returns the maxsat_weighted answer).
+
+```
+git clone https://github.com/wichtounet/sudoku_dataset data/external/wichtounet
+git -C data/external/wichtounet checkout 0db6de036b80b4e8e4574abe6e15026331bd5c2c
+python scripts/import_wichtounet.py
+python scripts/real_label_sheet.py                       # contact sheet for a human label check
+python scripts/run_e2e.py --config configs/e2e_real_wichtounet_cnn.json   # ~2 min on CPU
+python scripts/real_photos_report.py                     # tables, figures, real_photos.md
+```
+
+Two things differ from the synthetic evaluation, and both matter when reading the numbers:
+
+- **No verified corners, so a different vision check.** A photo fails at the vision stage if the grid is not found,
+  or if the CNN's empty / has-a-digit pattern disagrees with the labels on 12 or more cells. The reasoning: on
+  synthetic test_final, every image with correct corners had 0 such cells, and two different puzzles differ on at
+  least 24, so a grid on the wrong region shows up as a large disagreement even when the CNN reads digits well.
+  12 was fixed from synthetic data before the real run (the reasoning is also in the `run_e2e.py` docstring).
+- **Photos are not independent.** The 200 photos show only 76 distinct puzzles, so the report gives a cluster
+  bootstrap over puzzles next to the per-photo Wilson intervals.
+
+Results: [real_photos.md](../report/results/real_photos.md) (per-method tables for all 200 and the 40-photo v2 test
+split, cell accuracy before/after, vision check details, synthetic vs real, resolution and phone breakdowns,
+confusion pairs, figures in `report/figures/real/`).
+
 ## Demo (`scripts/demo_reasoning.py`)
 
 ```
