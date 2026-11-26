@@ -44,6 +44,19 @@ also saves a picture: the detected grid, the CNN reads with confidences, and the
 Methods: `maxsat_weighted` (default), `maxsat_unique`, `maxsat_unweighted`, `argmax_then_sat`,
 `threshold_then_sat`.
 
+## Interactive demo
+
+```bash
+pip install -e ".[ml,demo]"          # adds streamlit
+streamlit run demo/app.py            # opens http://localhost:8501
+```
+
+Upload a photo, or pick a test image (synthetic `test_final/clean` or a real wichtounet v2 test photo) and add
+noise with the sidebar sliders. The page shows the detected grid, the CNN reads with a confidence heatmap, and
+`maxsat_weighted` next to the `argmax_then_sat` baseline (overrides with their explanations, uniqueness, solve
+time). `maxsat_unique` is optional, with a 10 s limit. Needs the trained CNN (`outputs/models/cnn_v1/model.pt`) and,
+for test images, the generated data. Viva script and CLI fallback: [demo/DEMO_SCRIPT.md](demo/DEMO_SCRIPT.md).
+
 ## Reproduce everything
 
 All data goes to `data/` and all results to `outputs/` (both gitignored). In this order:

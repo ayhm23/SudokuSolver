@@ -173,3 +173,15 @@ One PR per area, merged in this order (perception's dataset is cut with the new 
     "missed digit recovered", which has no example in any run (census in gallery.md). Details:
     [evaluation.md](evaluation.md#gallery-real-successes-and-failures-scriptsmake_gallerypy).
 
+28. **feat(pipeline): optional `solver_kwargs` for `run`**
+    `run(..., solver_kwargs=None)` passes solver options to `make_method` (e.g. `{"time_limit": 10}` for
+    maxsat_unique). Default None, so every existing call behaves exactly as before. Test:
+    `test_solver_kwargs_are_passed_through`.
+
+29. **feat(demo): Streamlit demo and viva script**
+    `demo/app.py` (`streamlit run demo/app.py`, optional extra `demo`): upload or test image + noise, detected grid,
+    CNN confidence heatmap, maxsat_weighted vs argmax_then_sat with explanations, optional maxsat_unique with a 10 s
+    limit. Only calls `pipeline.run` / `visualize`. Checked headlessly (Streamlit AppTest) on a clean, a noisy, a
+    real, a vision-failure, a timeout, an uploaded and a corrupt input, and launched as a server.
+    `demo/DEMO_SCRIPT.md`: 3-minute script with three pre-checked images and the CLI fallback.
+

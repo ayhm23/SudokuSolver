@@ -330,6 +330,18 @@ Two things the gallery found that are worth knowing:
 
 Results: [gallery.md](../report/results/gallery.md), figures in `report/figures/gallery/`.
 
+## Interactive demo (`demo/app.py`)
+
+`pip install -e ".[ml,demo]"` then `streamlit run demo/app.py`. Upload a photo, or pick a test image (synthetic
+`test_final/clean` or a real v2 test photo) and add one noise type with a severity slider (same noise functions
+as the evaluation, seed 0). The page shows the detected grid, the CNN reads with a confidence heatmap,
+maxsat_weighted next to argmax_then_sat (overrides with their explanations, uniqueness, solve time) and, if ticked,
+maxsat_unique with a 10 s limit (on timeout it says so and shows the weighted answer). It calls only
+`pipeline.run` and `pipeline.visualize`; `run` gained an optional `solver_kwargs` (default None = unchanged) so the
+time limit can be passed. Test images are read as raw pixels, like `run_e2e.py`, so their ground truth applies
+(9 real photos have EXIF rotation tags that contradict the labels; `pipeline.run` would apply them to a raw file).
+Viva script with CLI fallback: [demo/DEMO_SCRIPT.md](../demo/DEMO_SCRIPT.md).
+
 ## Demo (`scripts/demo_reasoning.py`)
 
 ```
