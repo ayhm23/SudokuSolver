@@ -117,14 +117,17 @@ def run(
     method: str = "maxsat_weighted",
     require_unique: bool = False,
     tau: float = DEFAULT_TAU,
+    solver_kwargs: dict | None = None,
 ) -> PipelineOutput:
     """Run the whole pipeline on one image. Vision failures return status ERROR.
 
     require_unique=True is kept as a shortcut for method="maxsat_unique".
+    solver_kwargs: optional solver options passed to make_method, e.g.
+    {"time_limit": 10} for maxsat_unique (used by the demo). None = defaults.
     """
     if require_unique and method == "maxsat_weighted":
         method = "maxsat_unique"
-    solver = make_method(method, tau)
+    solver = make_method(method, tau, **(solver_kwargs or {}))
     # exif_transpose: phone photos are often stored sideways plus a rotation tag.
     image = np.asarray(ImageOps.exif_transpose(Image.open(image_path)).convert("RGB"))
     try:
