@@ -1,0 +1,12 @@
+group,difference,diff_pct_points,boot_lo,boot_hi,resamples_with_diff_le_0
+clean,maxsat_weighted - argmax_then_sat,23.0,15.0,31.0,0
+severity 0.25 (5 noise types),maxsat_weighted - argmax_then_sat,26.2,18.6,34.0,0
+severity 0.5 (5 noise types),maxsat_weighted - argmax_then_sat,22.8,16.0,30.0,0
+severity 1.0 (5 noise types),maxsat_weighted - argmax_then_sat,25.0,18.4,31.8,0
+blur (3 severities),maxsat_weighted - argmax_then_sat,19.3333,13.0,26.0,0
+gaussian_noise (3 severities),maxsat_weighted - argmax_then_sat,26.3333,18.3333,34.6667,0
+jpeg (3 severities),maxsat_weighted - argmax_then_sat,25.6667,18.0,33.6667,0
+lighting (3 severities),maxsat_weighted - argmax_then_sat,25.6667,17.6667,34.0,0
+rotate (3 severities),maxsat_weighted - argmax_then_sat,26.3333,18.6667,34.0,0
+all 15 noisy sets,maxsat_weighted - argmax_then_sat,24.6667,17.8667,31.8,0
+all 16 sets,maxsat_weighted - argmax_then_sat,24.5625,17.6875,31.6891,0

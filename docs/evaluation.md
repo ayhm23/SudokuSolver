@@ -258,6 +258,18 @@ python scripts/dump_cell_logits.py --renders "data/synthetic/test_final/*" \
 python scripts/make_report.py
 ```
 
+### Verification pass (read-only analyses of the runs above)
+
+No new runs of the methods; everything is computed from the existing outputs (and the per-cell logit dump).
+
+| Question | Script | Report |
+|---|---|---|
+| Why does unweighted MaxSAT fix 0 misreads? | `check_unweighted.py` | [unweighted_check.md](../report/results/unweighted_check.md) |
+| Which (true -> read) confusions, which fonts? | `analyse_cells.py` | [confusions.md](../report/results/confusions.md), `fig8_confusions` |
+| Why can noise improve accuracy? (cells flipping vs clean) | `analyse_cells.py` | [noise_flips.md](../report/results/noise_flips.md) |
+| Pooled intervals that respect the shared puzzles | `make_report.py` | [RESULTS.md](../report/results/RESULTS.md) sections 1d-1e |
+| maxsat_unique slow images, timeout what-if | `unique_tail.py` | [unique_tail.md](../report/results/unique_tail.md) |
+
 ## Demo (`scripts/demo_reasoning.py`)
 
 ```
